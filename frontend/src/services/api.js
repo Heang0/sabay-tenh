@@ -19,7 +19,7 @@ export const fetchProducts = async () => {
   }
 };
 
-// Fetch single product
+// Fetch single product by ID
 export const fetchProductById = async (id) => {
   try {
     const response = await fetch(`${API_URL}/products/${id}`);

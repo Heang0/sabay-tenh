@@ -1,26 +1,37 @@
-import { ShoppingCart, Search, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { ShoppingCart, Search, Menu, X, LogOut } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { isAuthenticated, logout } = useAuth();
+    const { getItemCount, toggleCart } = useCart();
 
     return (
-        <header className="bg-white shadow-sm sticky top-0 z-50">
+        <header className="bg-white shadow-sm sticky top-0 z-40">
             <nav className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
                 <div className="flex items-center justify-between">
-                    {/* Logo - Mobile Optimized */}
                     {/* Logo with Image */}
                     <div className="flex-shrink-0">
                         <a href="/" className="block">
                             <img
-                                src="/src/assets/logo.png"
+                                src={logo}
                                 alt="Logo"
                                 className="h-10 sm:h-12 w-auto"
                             />
                         </a>
                     </div>
 
-                    {/* Search Bar - Hidden on mobile, shown on desktop */}
+                    {/* Desktop Navigation */}
+                    <div className="hidden md:flex items-center space-x-8">
+                        <a href="/" className="text-gray-700 hover:text-blue-600 font-sans">Shop</a>
+                        <a href="/categories" className="text-gray-700 hover:text-blue-600 font-sans">Categories</a>
+                        <a href="/sale" className="text-gray-700 hover:text-blue-600 font-sans">Sale</a>
+                    </div>
+
+                    {/* Search Bar - Desktop */}
                     <div className="hidden md:flex items-center flex-1 max-w-md mx-4 lg:mx-8">
                         <div className="relative w-full">
                             <input
@@ -42,12 +53,35 @@ const Header = () => {
                         </div>
 
                         {/* Cart Icon */}
-                        <button className="relative p-1.5 sm:p-2 text-gray-700 hover:text-blue-600">
+                        <button
+                            onClick={toggleCart}
+                            className="relative p-1.5 sm:p-2 text-gray-700 hover:text-blue-600"
+                        >
                             <ShoppingCart size={20} className="sm:w-6 sm:h-6" />
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] sm:text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-sans">
-                                0
-                            </span>
+                            {getItemCount() > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] sm:text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-sans">
+                                    {getItemCount()}
+                                </span>
+                            )}
                         </button>
+
+                        {/* Admin Links (only when logged in) */}
+                        {isAuthenticated && (
+                            <>
+                                <a
+                                    href="/admin"
+                                    className="hidden md:inline-block px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-sans"
+                                >
+                                    Admin
+                                </a>
+                                <button
+                                    onClick={logout}
+                                    className="hidden md:inline-block p-1.5 text-gray-700 hover:text-red-600"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            </>
+                        )}
 
                         {/* Mobile menu button */}
                         <button
@@ -59,7 +93,7 @@ const Header = () => {
                     </div>
                 </div>
 
-                {/* Mobile Search Bar - Shown only on mobile */}
+                {/* Mobile Search Bar */}
                 <div className="md:hidden mt-2">
                     <div className="relative">
                         <input
@@ -71,7 +105,7 @@ const Header = () => {
                     </div>
                 </div>
 
-                {/* Mobile Menu - Updated without Categories */}
+                {/* Mobile Menu */}
                 {isMenuOpen && (
                     <div className="md:hidden mt-2 pb-2 border-t border-gray-100">
                         <div className="flex flex-col space-y-1 pt-2">
@@ -87,6 +121,19 @@ const Header = () => {
                             <a href="/new" className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded font-sans">
                                 New Arrivals
                             </a>
+                            {isAuthenticated && (
+                                <>
+                                    <a href="/admin" className="px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded font-sans">
+                                        Admin Dashboard
+                                    </a>
+                                    <button
+                                        onClick={logout}
+                                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded font-sans text-left"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            )}
                             <a href="/contact" className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded font-sans">
                                 Contact
                             </a>
