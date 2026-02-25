@@ -5,10 +5,26 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 
 const ProductList = () => {
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(null);
     const navigate = useNavigate();
+
+    const API_URL = import.meta.env.DEV
+        ? 'http://localhost:5000/api'
+        : `${window.location.origin}/api`;
+
+    // Load categories
+    const fetchCategories = async () => {
+        try {
+            const response = await fetch(`${API_URL}/categories`);
+            const data = await response.json();
+            setCategories(data);
+        } catch (err) {
+            console.error('Failed to load categories:', err);
+        }
+    };
 
     // Load products
     const loadProducts = async () => {
@@ -27,7 +43,15 @@ const ProductList = () => {
 
     useEffect(() => {
         loadProducts();
+        fetchCategories();
     }, []);
+
+    // Helper function to get category name from ID
+    const getCategoryName = (categoryId) => {
+        if (!categoryId) return 'Uncategorized';
+        const category = categories.find(c => c._id === categoryId);
+        return category ? category.nameEn : 'Unknown';
+    };
 
     // Handle delete
     const handleDelete = async (id, nameKm) => {
@@ -38,7 +62,6 @@ const ProductList = () => {
         try {
             setDeleteLoading(id);
             await deleteProduct(id);
-            // Remove from list
             setProducts(products.filter(p => p._id !== id));
         } catch (err) {
             alert('Failed to delete product');
@@ -120,7 +143,7 @@ const ProductList = () => {
                                 <tr key={product._id} className="hover:bg-gray-50">
                                     <td className="px-4 py-3">
                                         <img
-                                            src={product.image || 'https://via.placeholder.com/50'}
+                                            src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_100/') || 'https://via.placeholder.com/50'}
                                             alt={product.nameEn}
                                             className="w-12 h-12 object-cover rounded"
                                         />
@@ -137,7 +160,9 @@ const ProductList = () => {
                                             <span>$ {product.price}</span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 font-sans">{product.category}</td>
+                                    <td className="px-4 py-3 font-sans">
+                                        {getCategoryName(product.category)}
+                                    </td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded text-xs font-sans ${product.inStock
                                             ? 'bg-green-100 text-green-700'

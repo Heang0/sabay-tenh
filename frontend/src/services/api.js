@@ -35,10 +35,14 @@ export const fetchProductById = async (id) => {
 
 // Create new product
 export const createProduct = async (productData) => {
+  const token = localStorage.getItem('token');
   try {
     const response = await fetch(`${API_URL}/products`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(productData)
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -51,10 +55,14 @@ export const createProduct = async (productData) => {
 
 // Update product
 export const updateProduct = async (id, productData) => {
+  const token = localStorage.getItem('token');
   try {
     const response = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(productData)
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -67,9 +75,13 @@ export const updateProduct = async (id, productData) => {
 
 // Delete product
 export const deleteProduct = async (id) => {
+  const token = localStorage.getItem('token');
   try {
     const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();

@@ -42,19 +42,19 @@ const ProductDetail = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
         );
     }
 
     if (!product) {
         return (
-            <div className="text-center py-20">
-                <p className="text-gray-500 font-sans">Product not found</p>
+            <div className="text-center py-12">
+                <p className="text-gray-500 font-sans text-sm">Product not found</p>
                 <button
                     onClick={() => navigate('/')}
-                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-sans text-sm"
+                    className="mt-3 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-sans text-xs"
                 >
                     Back to Home
                 </button>
@@ -63,177 +63,163 @@ const ProductDetail = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-6">
-            {/* Back Button */}
+        <div className="max-w-6xl mx-auto px-4 pt-2 pb-8">
+            {/* Back Button - Smaller */}
             <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-500 hover:text-blue-600 mb-6 font-sans text-sm transition-colors"
+                className="flex items-center gap-1 text-gray-400 hover:text-blue-600 mb-3 font-sans text-xs transition-colors"
             >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={14} />
                 <span>Back</span>
             </button>
 
-            {/* Product Main Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 mb-12">
+            {/* Product Main Section - Tight Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
                 {/* Product Image */}
-                <div className="bg-gray-50 rounded-xl overflow-hidden">
+                <div className="bg-gray-50 rounded-lg overflow-hidden">
                     <img
-                        src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_800/') || 'https://via.placeholder.com/800x800'}
+                        src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_600/') || 'https://via.placeholder.com/600x600'}
                         alt={product.nameEn}
                         className="w-full h-auto object-cover"
                     />
                 </div>
 
-                {/* Product Info */}
-                <div className="space-y-5">
+                {/* Product Info - Compact */}
+                <div className="space-y-3">
                     {/* Title */}
                     <div>
-                        <h1 className="text-2xl font-bold font-khmer text-gray-800 mb-1">{product.nameKm}</h1>
-                        <p className="text-base text-gray-500 font-sans">{product.nameEn}</p>
+                        <h1 className="text-xl font-bold font-khmer text-gray-800 mb-0.5">{product.nameKm}</h1>
+                        <p className="text-sm text-gray-500 font-sans">{product.nameEn}</p>
                     </div>
 
-                    {/* Price */}
-                    <div className="flex items-baseline gap-3">
+                    {/* Price - Compact */}
+                    <div className="flex items-center gap-2">
                         {product.salePrice ? (
                             <>
-                                <span className="text-2xl font-bold text-red-600 font-sans">
+                                <span className="text-xl font-bold text-red-600 font-sans">
                                     ${product.salePrice}
                                 </span>
-                                <span className="text-lg text-gray-400 line-through font-sans">
+                                <span className="text-sm text-gray-400 line-through font-sans">
                                     ${product.price}
                                 </span>
-                                <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-xs font-sans font-medium">
-                                    Save ${(product.price - product.salePrice).toFixed(2)}
+                                <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-sans font-medium">
+                                    -{Math.round((1 - product.salePrice / product.price) * 100)}%
                                 </span>
                             </>
                         ) : (
-                            <span className="text-2xl font-bold text-gray-800 font-sans">
+                            <span className="text-xl font-bold text-gray-800 font-sans">
                                 ${product.price}
                             </span>
                         )}
                     </div>
 
-                    {/* Stock Status */}
-                    <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        <span className={`text-sm font-sans ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
-                            {product.inStock ? 'In Stock' : 'Out of Stock'}
+                    {/* Stock Status - Small */}
+                    <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className={`text-xs font-sans ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
+                            {product.inStock ? 'In stock' : 'Out of stock'}
                         </span>
                     </div>
 
-                    {/* Quantity Selector */}
-                    <div className="pt-2">
-                        <label className="block text-sm font-sans text-gray-600 mb-2">Quantity</label>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center border rounded-lg">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600 transition-colors rounded-l-lg"
-                                >
-                                    <Minus size={16} />
-                                </button>
-                                <span className="w-12 text-center font-sans text-sm">{quantity}</span>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600 transition-colors rounded-r-lg"
-                                >
-                                    <Plus size={16} />
-                                </button>
-                            </div>
-                            <span className="text-sm text-gray-400 font-sans">
-                                {product.inStock ? 'Available' : 'Out of stock'}
-                            </span>
+                    {/* Quantity Selector - Compact */}
+                    <div className="flex items-center gap-3 pt-1">
+                        <div className="flex items-center border rounded-md">
+                            <button
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 text-gray-600"
+                            >
+                                <Minus size={12} />
+                            </button>
+                            <span className="w-8 text-center font-sans text-xs">{quantity}</span>
+                            <button
+                                onClick={() => setQuantity(quantity + 1)}
+                                className="w-7 h-7 flex items-center justify-center hover:bg-gray-50 text-gray-600"
+                            >
+                                <Plus size={12} />
+                            </button>
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-4">
+                    {/* Action Buttons - Compact */}
+                    <div className="flex gap-2 pt-2">
                         <button
                             onClick={handleAddToCart}
                             disabled={!product.inStock}
-                            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-sans text-sm"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 transition-colors font-sans text-xs"
                         >
-                            <ShoppingCart size={18} />
+                            <ShoppingCart size={14} />
                             Add to Cart
                         </button>
-                        <button className="w-12 h-12 flex items-center justify-center border rounded-lg hover:bg-gray-50 transition-colors">
-                            <Heart size={18} className="text-gray-600" />
+                        <button className="w-9 h-9 flex items-center justify-center border rounded-lg hover:bg-gray-50 transition-colors">
+                            <Heart size={14} className="text-gray-500" />
                         </button>
                     </div>
 
-                    {/* Description */}
+                    {/* Description - Only if exists */}
                     {product.description && (
-                        <div className="pt-4 border-t">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-2 font-sans">Description</h3>
-                            <p className="text-sm text-gray-600 font-sans leading-relaxed">
+                        <div className="pt-2">
+                            <p className="text-xs text-gray-600 font-sans leading-relaxed line-clamp-3">
                                 {product.description}
                             </p>
                         </div>
                     )}
-
-                    {/* Product Meta */}
-                    <div className="pt-2 text-xs text-gray-400 font-sans border-t">
-                        <p>Category: {product.category}</p>
-                        <p className="mt-1">Product ID: {product._id.slice(-8)}</p>
-                    </div>
                 </div>
             </div>
 
-            {/* You May Also Like Section */}
+            {/* You May Also Like Section - Compact */}
             {relatedProducts.length > 0 && (
-                <div className="border-t pt-8">
-                    <h2 className="text-lg font-semibold mb-1 font-khmer text-gray-800">ផលិតផលស្រដៀងគ្នា</h2>
-                    <p className="text-sm text-gray-500 mb-6 font-sans">You may also like</p>
+                <div className="border-t pt-4">
+                    <h2 className="text-base font-semibold mb-2 font-khmer text-gray-800">ផលិតផលស្រដៀងគ្នា</h2>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {relatedProducts.map((related) => (
                             <div
                                 key={related._id}
                                 onClick={() => navigate(`/product/${related._id}`)}
                                 className="group cursor-pointer"
                             >
-                                <div className="bg-gray-50 rounded-lg overflow-hidden mb-2 aspect-square">
+                                <div className="bg-gray-50 rounded-md overflow-hidden mb-1.5 aspect-square">
                                     <img
-                                        src={related.image?.replace('/upload/', '/upload/f_auto,q_auto,w_300/') || 'https://via.placeholder.com/300x300'}
+                                        src={related.image?.replace('/upload/', '/upload/f_auto,q_auto,w_200/') || 'https://via.placeholder.com/200x200'}
                                         alt={related.nameEn}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
                                     {related.onSale && (
-                                        <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 text-xs rounded font-sans">
+                                        <span className="absolute top-1 right-1 bg-red-500 text-white px-1 py-0.5 text-[8px] rounded font-sans">
                                             Sale
                                         </span>
                                     )}
                                 </div>
                                 <div>
-                                    <h3 className="font-khmer text-sm font-medium text-gray-800 mb-0.5 line-clamp-1">
+                                    <h3 className="font-khmer text-xs font-medium text-gray-800 mb-0.5 line-clamp-1">
                                         {related.nameKm}
                                     </h3>
-                                    <p className="font-sans text-xs text-gray-500 mb-1 line-clamp-1">
+                                    <p className="font-sans text-[10px] text-gray-500 mb-1 line-clamp-1">
                                         {related.nameEn}
                                     </p>
                                     <div className="flex items-center justify-between">
                                         {related.salePrice ? (
                                             <div className="flex items-center gap-1">
-                                                <span className="font-sans text-sm font-semibold text-red-600">
+                                                <span className="font-sans text-xs font-semibold text-red-600">
                                                     ${related.salePrice}
                                                 </span>
-                                                <span className="font-sans text-xs text-gray-400 line-through">
+                                                <span className="font-sans text-[9px] text-gray-400 line-through">
                                                     ${related.price}
                                                 </span>
                                             </div>
                                         ) : (
-                                            <span className="font-sans text-sm font-semibold text-gray-800">
+                                            <span className="font-sans text-xs font-semibold text-gray-800">
                                                 ${related.price}
                                             </span>
                                         )}
                                         <button
-                                            className="p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 addToCart(related, 1);
                                             }}
                                         >
-                                            <ShoppingCart size={14} />
+                                            <ShoppingCart size={10} />
                                         </button>
                                     </div>
                                 </div>

@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createProduct } from '../../services/api';
 import CloudinaryUpload from '../../components/CloudinaryUpload';
 
 const AddProduct = () => {
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
     const [formData, setFormData] = useState({
         nameKm: '',
         nameEn: '',
@@ -10,17 +13,37 @@ const AddProduct = () => {
         salePrice: '',
         onSale: false,
         image: '',
-        category: 'furniture',
+        category: '',
         description: '',
         inStock: true
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
-    const categories = [
-        'furniture', 'storage', 'beauty', 'home',
-        'bedding', 'sports', 'electronics', 'clothing'
-    ];
+    const API_URL = import.meta.env.DEV
+        ? 'http://localhost:5000/api'
+        : `${window.location.origin}/api`;
+
+    // Fetch categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch(`${API_URL}/categories`);
+                const data = await response.json();
+                setCategories(data);
+                if (data.length > 0) {
+                    setFormData(prev => ({ ...prev, category: data[0]._id }));
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -36,28 +59,38 @@ const AddProduct = () => {
         setMessage('');
 
         try {
-            // Convert price strings to numbers
             const productData = {
                 ...formData,
                 price: parseFloat(formData.price),
                 salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null
             };
 
-            const result = await createProduct(productData);
+            await createProduct(productData);
             setMessage({ type: 'success', text: 'Product added successfully!' });
 
-            // Clear form
             setFormData({
                 nameKm: '', nameEn: '', price: '', salePrice: '',
-                onSale: false, image: '', category: 'furniture',
+                onSale: false, image: '', category: categories[0]?._id || '',
                 description: '', inStock: true
             });
+
+            setTimeout(() => {
+                navigate('/admin/products');
+            }, 1500);
         } catch (error) {
             setMessage({ type: 'error', text: 'Failed to add product. Check console.' });
         } finally {
             setLoading(false);
         }
     };
+
+    if (loadingCategories) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
@@ -146,24 +179,23 @@ const AddProduct = () => {
                         value={formData.image}
                         onRemove={() => setFormData(prev => ({ ...prev, image: '' }))}
                     />
-                    {formData.image && (
-                        <p className="text-xs text-gray-500 mt-1">
-                            ✓ Image uploaded successfully
-                        </p>
-                    )}
                 </div>
 
-                {/* Category */}
+                {/* Dynamic Category Dropdown */}
                 <div>
                     <label className="block font-sans mb-1">Category</label>
                     <select
                         name="category"
                         value={formData.category}
                         onChange={handleChange}
+                        required
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                     >
+                        <option value="">Select a category</option>
                         {categories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                            <option key={cat._id} value={cat._id}>
+                                {cat.nameEn} ({cat.nameKm})
+                            </option>
                         ))}
                     </select>
                 </div>

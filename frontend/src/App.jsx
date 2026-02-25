@@ -72,7 +72,7 @@ function AppContent() {
       {!isAdminRoute && <Header />}
       <CartSidebar />
 
-      <main className={`container mx-auto px-4 py-4 sm:py-8 ${isAdminRoute ? 'pt-0' : ''}`}>
+      <main className={`container mx-auto px-4 ${isAdminRoute ? 'pt-0' : 'pt-0'}`}>
         <Routes>
           <Route path="/" element={
             <>
@@ -97,7 +97,6 @@ function AppContent() {
                           onClick={() => handleCategoryClick(category._id)}
                           className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-full shadow-sm hover:shadow-md transition-shadow whitespace-nowrap"
                         >
-                          <span className="text-lg">{category.icon}</span>
                           <span className="font-khmer text-sm">{category.nameKm}</span>
                           <span className="font-sans text-xs text-gray-500 hidden sm:inline">
                             {category.nameEn}

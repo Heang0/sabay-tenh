@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProductById, updateProduct } from '../../services/api';
+import CloudinaryUpload from '../../components/CloudinaryUpload';
 
 const EditProduct = () => {
-    const { id } = useParams(); // Get product ID from URL
+    const { id } = useParams();
     const navigate = useNavigate();
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -15,15 +18,31 @@ const EditProduct = () => {
         salePrice: '',
         onSale: false,
         image: '',
-        category: 'furniture',
+        category: '',
         description: '',
         inStock: true
     });
 
-    const categories = [
-        'furniture', 'storage', 'beauty', 'home',
-        'bedding', 'sports', 'electronics', 'clothing'
-    ];
+    const API_URL = import.meta.env.DEV
+        ? 'http://localhost:5000/api'
+        : `${window.location.origin}/api`;
+
+    // Fetch categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch(`${API_URL}/categories`);
+                const data = await response.json();
+                setCategories(data);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     // Load product data
     useEffect(() => {
@@ -38,7 +57,7 @@ const EditProduct = () => {
                     salePrice: data.salePrice || '',
                     onSale: data.onSale || false,
                     image: data.image || '',
-                    category: data.category || 'furniture',
+                    category: data.category || '',
                     description: data.description || '',
                     inStock: data.inStock !== undefined ? data.inStock : true
                 });
@@ -74,7 +93,7 @@ const EditProduct = () => {
             };
 
             await updateProduct(id, productData);
-            navigate('/admin/products'); // Go back to list after save
+            navigate('/admin/products');
         } catch (err) {
             setError('Failed to update product');
             console.error(err);
@@ -83,10 +102,10 @@ const EditProduct = () => {
         }
     };
 
-    if (loading) {
+    if (loading || loadingCategories) {
         return (
             <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
         );
     }
@@ -100,14 +119,14 @@ const EditProduct = () => {
                 </div>
                 <button
                     onClick={() => navigate('/admin/products')}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
                 >
                     Back
                 </button>
             </div>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
                     {error}
                 </div>
             )}
@@ -115,33 +134,33 @@ const EditProduct = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Khmer Name */}
                 <div>
-                    <label className="block font-khmer mb-1">ឈ្មោះជាភាសាខ្មែរ</label>
+                    <label className="block font-khmer mb-1 text-sm">ឈ្មោះជាភាសាខ្មែរ</label>
                     <input
                         type="text"
                         name="nameKm"
                         value={formData.nameKm}
                         onChange={handleChange}
                         required
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     />
                 </div>
 
                 {/* English Name */}
                 <div>
-                    <label className="block font-sans mb-1">English Name</label>
+                    <label className="block font-sans mb-1 text-sm">English Name</label>
                     <input
                         type="text"
                         name="nameEn"
                         value={formData.nameEn}
                         onChange={handleChange}
                         required
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     />
                 </div>
 
                 {/* Price */}
                 <div>
-                    <label className="block font-sans mb-1">Price ($)</label>
+                    <label className="block font-sans mb-1 text-sm">Price ($)</label>
                     <input
                         type="number"
                         step="0.01"
@@ -149,14 +168,14 @@ const EditProduct = () => {
                         value={formData.price}
                         onChange={handleChange}
                         required
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     />
                 </div>
 
                 {/* Sale Price & On Sale Checkbox */}
                 <div className="flex items-center gap-4">
                     <div className="flex-1">
-                        <label className="block font-sans mb-1">Sale Price ($)</label>
+                        <label className="block font-sans mb-1 text-sm">Sale Price ($)</label>
                         <input
                             type="number"
                             step="0.01"
@@ -164,7 +183,7 @@ const EditProduct = () => {
                             value={formData.salePrice}
                             onChange={handleChange}
                             disabled={!formData.onSale}
-                            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                         />
                     </div>
                     <div className="flex items-center mt-6">
@@ -175,50 +194,53 @@ const EditProduct = () => {
                             onChange={handleChange}
                             className="mr-2"
                         />
-                        <label className="font-sans">On Sale</label>
+                        <label className="font-sans text-sm">On Sale</label>
                     </div>
                 </div>
 
                 {/* Image Upload */}
-                {/* Image Upload */}
                 <div>
-                    <label className="block font-sans mb-1">Product Image</label>
+                    <label className="block font-sans mb-1 text-sm">Product Image</label>
                     <CloudinaryUpload
                         onUpload={(url) => setFormData(prev => ({ ...prev, image: url }))}
                         value={formData.image}
                         onRemove={() => setFormData(prev => ({ ...prev, image: '' }))}
                     />
-                    {formData.image && (
-                        <p className="text-xs text-gray-500 mt-1">
-                            ✓ Image uploaded successfully
-                        </p>
-                    )}
                 </div>
 
-                {/* Category */}
+                {/* Dynamic Category Dropdown */}
                 <div>
-                    <label className="block font-sans mb-1">Category</label>
+                    <label className="block font-sans mb-1 text-sm">Category</label>
                     <select
                         name="category"
                         value={formData.category}
                         onChange={handleChange}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        required
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     >
+                        <option value="">Select a category</option>
                         {categories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                            <option key={cat._id} value={cat._id}>
+                                {cat.nameEn} ({cat.nameKm})
+                            </option>
                         ))}
                     </select>
+                    {categories.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                            No categories found. Please create categories first.
+                        </p>
+                    )}
                 </div>
 
                 {/* Description */}
                 <div>
-                    <label className="block font-sans mb-1">Description</label>
+                    <label className="block font-sans mb-1 text-sm">Description</label>
                     <textarea
                         name="description"
                         value={formData.description}
                         onChange={handleChange}
                         rows="3"
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     />
                 </div>
 
@@ -231,7 +253,7 @@ const EditProduct = () => {
                         onChange={handleChange}
                         className="mr-2"
                     />
-                    <label className="font-sans">In Stock</label>
+                    <label className="font-sans text-sm">In Stock</label>
                 </div>
 
                 {/* Buttons */}
@@ -239,14 +261,14 @@ const EditProduct = () => {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-sans"
+                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-sans text-sm"
                     >
                         {saving ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button
                         type="button"
                         onClick={() => navigate('/admin/products')}
-                        className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-sans"
+                        className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-sans text-sm"
                     >
                         Cancel
                     </button>

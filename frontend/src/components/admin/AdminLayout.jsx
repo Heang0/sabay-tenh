@@ -38,20 +38,19 @@ const AdminLayout = ({ children }) => {
         {
             path: '/admin/categories',
             name: 'Categories',
-            icon: <FolderTree size={20} />,  // Updated
-            soon: true
+            icon: <FolderTree size={20} />  // ← Fixed! No "soon"
         },
         {
             path: '/admin/orders',
             name: 'Orders',
             icon: <ShoppingBag size={20} />,
-            soon: true // For future
+            soon: true // Keep "soon" for future features
         },
         {
             path: '/admin/settings',
             name: 'Settings',
             icon: <Settings size={20} />,
-            soon: true // For future
+            soon: true // Keep "soon" for future features
         }
     ];
 

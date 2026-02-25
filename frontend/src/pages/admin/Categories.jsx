@@ -8,14 +8,18 @@ const Categories = () => {
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
         nameKm: '',
-        nameEn: '',
-        icon: '📦'
+        nameEn: ''
     });
+
+    // Get API base URL
+    const API_URL = import.meta.env.DEV
+        ? 'http://localhost:5000/api'
+        : `${window.location.origin}/api`;
 
     // Fetch categories
     const fetchCategories = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/categories');
+            const response = await fetch(`${API_URL}/categories`);
             const data = await response.json();
             setCategories(data);
         } catch (error) {
@@ -33,10 +37,15 @@ const Categories = () => {
         e.preventDefault();
         const token = localStorage.getItem('token');
 
+        if (!token) {
+            alert('Please login first');
+            return;
+        }
+
         try {
             const url = editingId
-                ? `http://localhost:5000/api/categories/${editingId}`
-                : 'http://localhost:5000/api/categories';
+                ? `${API_URL}/categories/${editingId}`
+                : `${API_URL}/categories`;
 
             const method = editingId ? 'PUT' : 'POST';
 
@@ -50,13 +59,17 @@ const Categories = () => {
             });
 
             if (response.ok) {
-                setFormData({ nameKm: '', nameEn: '', icon: '📦' });
+                setFormData({ nameKm: '', nameEn: '' });
                 setShowForm(false);
                 setEditingId(null);
-                fetchCategories();
+                fetchCategories(); // Refresh list
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Failed to save category');
             }
         } catch (error) {
             console.error('Error saving category:', error);
+            alert('Error saving category');
         }
     };
 
@@ -71,25 +84,34 @@ const Categories = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure?')) return;
+        if (!window.confirm('Are you sure you want to delete this category?')) return;
 
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
+            const response = await fetch(`${API_URL}/categories/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (response.ok) {
-                fetchCategories();
+                fetchCategories(); // Refresh list
+            } else {
+                alert('Failed to delete category');
             }
         } catch (error) {
             console.error('Error deleting category:', error);
+            alert('Error deleting category');
         }
     };
 
     if (loading) {
-        return <div className="flex justify-center p-8">Loading...</div>;
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
     }
 
     return (
@@ -97,18 +119,18 @@ const Categories = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold font-khmer">គ្រប់គ្រងប្រភេទ</h2>
-                    <p className="text-gray-600 font-sans">Categories Management</p>
+                    <p className="text-gray-600 font-sans text-sm">Categories Management</p>
                 </div>
                 <button
                     onClick={() => {
-                        setFormData({ nameKm: '', nameEn: '', icon: '📦' });
+                        setFormData({ nameKm: '', nameEn: '' });
                         setEditingId(null);
                         setShowForm(!showForm);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                    <Plus size={20} />
-                    <span>{showForm ? 'Cancel' : 'Add Category'}</span>
+                    <Plus size={18} />
+                    <span className="text-sm">{showForm ? 'Cancel' : 'Add Category'}</span>
                 </button>
             </div>
 
@@ -119,41 +141,41 @@ const Categories = () => {
                     </h3>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block font-khmer mb-1">ឈ្មោះខ្មែរ</label>
+                            <label className="block font-khmer text-sm mb-1">ឈ្មោះខ្មែរ</label>
                             <input
                                 type="text"
                                 value={formData.nameKm}
                                 onChange={(e) => setFormData({ ...formData, nameKm: e.target.value })}
-                                className="w-full p-2 border rounded"
+                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block font-sans mb-1">English Name</label>
+                            <label className="block font-sans text-sm mb-1">English Name</label>
                             <input
                                 type="text"
                                 value={formData.nameEn}
                                 onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                                className="w-full p-2 border rounded"
+                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="block font-sans mb-1">Icon (emoji)</label>
-                            <input
-                                type="text"
-                                value={formData.icon}
-                                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                                className="w-full p-2 border rounded"
-                                placeholder="📦"
-                            />
+
+                        <div className="flex gap-3">
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                            >
+                                {editingId ? 'Update' : 'Save'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowForm(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
                         </div>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                            {editingId ? 'Update' : 'Save'}
-                        </button>
                     </form>
                 </div>
             )}
@@ -162,36 +184,44 @@ const Categories = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-4 py-3 text-left">Icon</th>
-                            <th className="px-4 py-3 text-left">Khmer</th>
-                            <th className="px-4 py-3 text-left">English</th>
-                            <th className="px-4 py-3 text-left">Slug</th>
-                            <th className="px-4 py-3 text-left">Actions</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Khmer</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">English</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {categories.map((cat) => (
-                            <tr key={cat._id} className="border-t hover:bg-gray-50">
-                                <td className="px-4 py-3 text-2xl">{cat.icon}</td>
-                                <td className="px-4 py-3 font-khmer">{cat.nameKm}</td>
-                                <td className="px-4 py-3 font-sans">{cat.nameEn}</td>
-                                <td className="px-4 py-3 text-gray-500">{cat.slug}</td>
-                                <td className="px-4 py-3">
-                                    <button
-                                        onClick={() => handleEdit(cat)}
-                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded mr-2"
-                                    >
-                                        <Edit size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(cat._id)}
-                                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                    <tbody className="divide-y">
+                        {categories.length === 0 ? (
+                            <tr>
+                                <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                                    No categories found. Click "Add Category" to create one.
                                 </td>
                             </tr>
-                        ))}
+                        ) : (
+                            categories.map((cat) => (
+                                <tr key={cat._id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 font-khmer">{cat.nameKm}</td>
+                                    <td className="px-4 py-3 font-sans">{cat.nameEn}</td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleEdit(cat)}
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                title="Edit"
+                                            >
+                                                <Edit size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(cat._id)}
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
