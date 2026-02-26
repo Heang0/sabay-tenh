@@ -1,9 +1,8 @@
 // Auto-detect API URL based on environment
 const isDev = import.meta.env.DEV;
-
 const API_URL = isDev
   ? 'http://localhost:5000/api'
-  : `${window.location.origin}/api`;
+  : 'https://sabay-tenh.onrender.com/api'; // Hardcoded production URL
 
 // ========== PUBLIC ROUTES ==========
 
