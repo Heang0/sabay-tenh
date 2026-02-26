@@ -13,6 +13,7 @@ import PaymentPage from './pages/PaymentPage';
 import OrderSuccess from './pages/OrderSuccess';
 import AddProduct from './pages/admin/AddProduct';
 import { useLanguage } from './context/LanguageContext';
+import { fetchProducts, fetchCategories } from './services/api';
 import { useSearch } from './context/SearchContext';
 import ProductList from './pages/admin/ProductList';
 import EditProduct from './pages/admin/EditProduct';
@@ -95,12 +96,7 @@ function AppContent() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const API_URL = import.meta.env.DEV
-          ? 'http://localhost:5000/api'
-          : `${window.location.origin}/api`;
-
-        const response = await fetch(`${API_URL}/categories`);
-        const data = await response.json();
+        const data = await fetchCategories(); // Using the API function
         setCategories(data);
       } catch (err) {
         console.error('Failed to load categories:', err);
