@@ -154,7 +154,7 @@ function AppContent() {
               )}
 
               {/* Categories */}
-              {categories.length > 0 && (
+              {categories.filter(category => products.some(product => product.category === category._id)).length > 0 && (
                 <div className="mb-6 sm:mb-8">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold font-khmer text-gray-800">
@@ -176,21 +176,28 @@ function AppContent() {
                         </span>
                       </button>
 
-                      {/* Category Buttons */}
-                      {categories.map((category) => (
-                        <button
-                          key={category._id}
-                          onClick={() => handleCategoryClick(category._id)}
-                          className={`group flex items-center space-x-2 px-4 py-2 rounded-full shadow-sm transition-all whitespace-nowrap ${selectedCategory === category._id
-                            ? 'bg-[#005E7B] text-white'
-                            : 'bg-white border border-gray-200 hover:border-[#005E7B] hover:bg-[#005E7B]/5'
-                            }`}
-                        >
-                          <span className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-sm`}>
-                            {language === 'km' ? category.nameKm : category.nameEn}
-                          </span>
-                        </button>
-                      ))}
+                      {/* First, create a list of categories that have products */}
+                      {(() => {
+                        // Get unique category IDs that actually have products
+                        const categoriesWithProducts = categories.filter(category =>
+                          products.some(product => product.category === category._id)
+                        );
+
+                        return categoriesWithProducts.map((category) => (
+                          <button
+                            key={category._id}
+                            onClick={() => handleCategoryClick(category._id)}
+                            className={`group flex items-center space-x-2 px-4 py-2 rounded-full shadow-sm transition-all whitespace-nowrap ${selectedCategory === category._id
+                              ? 'bg-[#005E7B] text-white'
+                              : 'bg-white border border-gray-200 hover:border-[#005E7B] hover:bg-[#005E7B]/5'
+                              }`}
+                          >
+                            <span className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-sm`}>
+                              {language === 'km' ? category.nameKm : category.nameEn}
+                            </span>
+                          </button>
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -237,7 +244,15 @@ function AppContent() {
                     <>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold font-khmer text-gray-800">
-                          {language === 'km' ? 'ផលិតផលទាំងអស់' : 'All Products'}
+                          {selectedCategory === 'all'
+                            ? (language === 'km' ? 'ផលិតផលទាំងអស់' : 'All Products')
+                            : (() => {
+                              const category = categories.find(c => c._id === selectedCategory);
+                              return category
+                                ? (language === 'km' ? category.nameKm : category.nameEn)
+                                : (language === 'km' ? 'ផលិតផល' : 'Products');
+                            })()
+                          }
                         </h2>
                         {searchQuery && (
                           <span className={`text-sm text-[#005E7B] ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
@@ -271,7 +286,7 @@ function AppContent() {
 
                             {/* Product Info */}
                             <div className="p-3">
-                              <h3 className="font-khmer text-sm font-medium text-gray-800 mb-1 line-clamp-2">
+                              <h3 className="font-khmer text-base font-medium text-gray-800 mb-1 line-clamp-2">
                                 {product.nameKm}
                               </h3>
                               <p className="font-sans text-xs text-gray-500 mb-2 line-clamp-1">

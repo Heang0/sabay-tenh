@@ -109,7 +109,7 @@ const Sale = () => {
 
                                     {/* Product Info - exactly like home page */}
                                     <div className="p-2 sm:p-3 md:p-4">
-                                        <h3 className="font-khmer text-sm sm:text-sm md:text-base lg:text-lg mb-0.5 sm:mb-1 line-clamp-2">
+                                        <h3 className="font-khmer text-base font-medium text-gray-800 mb-1 line-clamp-2">
                                             {product.nameKm}
                                         </h3>
                                         <p className="font-sans text-xs text-gray-600 mb-1 sm:mb-2 line-clamp-1">

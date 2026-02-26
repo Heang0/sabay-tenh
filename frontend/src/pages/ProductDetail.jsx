@@ -99,7 +99,9 @@ const ProductDetail = () => {
                 <div className="px-4 md:px-0 py-4 md:py-0 space-y-3">
                     {/* Title */}
                     <div>
-                        <h1 className="text-base sm:text-base md:text-lg lg:text-xl font-bold font-khmer text-gray-800 mb-0.5">{product.nameKm}</h1>
+                        <h1 className="font-khmer text-base sm:text-base md:text-lg lg:text-xl font-medium text-gray-800 mb-0.5">
+                            {product.nameKm}
+                        </h1>
                         <p className="text-sm text-gray-500 font-sans">{product.nameEn}</p>
                     </div>
 
@@ -208,7 +210,7 @@ const ProductDetail = () => {
                                         )}
                                     </div>
                                     <div className="p-2 sm:p-3 md:p-4">
-                                        <h3 className="font-khmer text-sm sm:text-sm md:text-base lg:text-lg mb-0.5 sm:mb-1 line-clamp-2">
+                                        <h3 className="font-khmer text-base font-medium text-gray-800 mb-1 line-clamp-2">
                                             {related.nameKm}
                                         </h3>
                                         <p className="font-sans text-xs text-gray-600 mb-1 sm:mb-2 line-clamp-1">
