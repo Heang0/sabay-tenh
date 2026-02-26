@@ -5,14 +5,11 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS configuration - Allow both local development and production frontend
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:3000',
-  'https://sabay-tenh-frontend.onrender.com', // Replace with your actual frontend URL
-  'https://sabay-tenh-backend.onrender.com'    // Replace with your actual backend URL
+  'https://sabay-tenh-kh.onrender.com', // Your live frontend URL
+  'https://sabay-tenh.onrender.com'     // Your backend URL (optional)
 ];
-
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
