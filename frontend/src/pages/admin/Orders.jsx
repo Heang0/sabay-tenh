@@ -13,7 +13,6 @@ const Orders = () => {
     const fetchOrders = async () => {
         const token = localStorage.getItem('token');
         try {
-            console.log('Fetching orders from:', `${API_URL}/orders`); // Debug
             const response = await fetch(`${API_URL}/orders`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -25,7 +24,6 @@ const Orders = () => {
             }
 
             const data = await response.json();
-            console.log('Orders fetched:', data); // Debug
             setOrders(data);
         } catch (error) {
             console.error('Error fetching orders:', error);

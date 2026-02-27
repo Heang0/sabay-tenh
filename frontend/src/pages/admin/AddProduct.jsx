@@ -23,7 +23,7 @@ const AddProduct = () => {
 
     const API_URL = import.meta.env.DEV
         ? 'http://localhost:5000/api'
-        : `${window.location.origin}/api`;
+        : 'https://sabay-tenh.onrender.com/api'; 
 
     // Fetch categories
     useEffect(() => {

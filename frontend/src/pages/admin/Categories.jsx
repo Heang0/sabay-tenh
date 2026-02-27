@@ -11,16 +11,17 @@ const Categories = () => {
         nameEn: ''
     });
 
-    // Get API base URL
     const API_URL = import.meta.env.DEV
         ? 'http://localhost:5000/api'
-        : `${window.location.origin}/api`;
+        : 'https://sabay-tenh.onrender.com/api';
 
     // Fetch categories
     const fetchCategories = async () => {
         try {
+            console.log('Fetching from:', `${API_URL}/categories`); // Debug
             const response = await fetch(`${API_URL}/categories`);
             const data = await response.json();
+            console.log('Categories fetched:', data); // Debug
             setCategories(data);
         } catch (error) {
             console.error('Error fetching categories:', error);

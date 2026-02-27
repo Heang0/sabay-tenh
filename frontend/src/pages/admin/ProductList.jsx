@@ -23,22 +23,17 @@ const ProductList = () => {
     // Fetch categories
     const fetchCategories = async () => {
         try {
-            console.log('Fetching categories from:', `${API_URL}/categories`); // Debug
             const response = await fetch(`${API_URL}/categories`);
 
             if (!response.ok) {
-                console.log('Response status:', response.status);
-                const text = await response.text();
-                console.log('Response text:', text);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log('✅ Categories fetched:', data);
             setCategories(data);
             return data;
         } catch (err) {
-            console.error('❌ Failed to load categories:', err);
+            console.error('Failed to load categories:', err);
             return [];
         }
     };
@@ -102,17 +97,8 @@ const ProductList = () => {
     const getCategoryName = (categoryId) => {
         if (!categoryId) return 'Uncategorized';
 
-        // Add debug log
-        console.log('Looking for category:', categoryId, 'in', categories);
-
         const category = categories.find(c => c._id === categoryId);
-
-        if (category) {
-            return category.nameEn;
-        } else {
-            // Show partial ID for debugging
-            return `Unknown (${categoryId.slice(-4)})`;
-        }
+        return category ? category.nameEn : 'Unknown';
     };
 
     // Handle delete

@@ -2,11 +2,8 @@
 const isDev = import.meta.env.DEV;
 const API_URL = isDev
   ? 'http://localhost:5000/api'
-  : 'https://sabay-tenh.onrender.com/api'; // This is correct - keep it!
+  : 'https://sabay-tenh.onrender.com/api';
 
-// For debugging, add this console.log
-console.log('🔧 API_URL in production:', API_URL);
-console.log('🔧 isDev:', isDev);
 
 // ========== PUBLIC ROUTES ==========
 

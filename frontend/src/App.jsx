@@ -98,7 +98,6 @@ function AppContent() {
     const loadCategories = async () => {
       try {
         const data = await fetchCategories();
-        console.log('Categories loaded:', data);
         setCategories(data);
       } catch (err) {
         console.error('Failed to load categories:', err);
