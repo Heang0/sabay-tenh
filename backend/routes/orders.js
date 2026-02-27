@@ -73,11 +73,16 @@ router.post('/', async (req, res) => {
 
         console.log('✅ Order saved to database:', savedOrder.orderNumber);
 
-        // Fire and forget - NO AWAIT, NO TRY/CATCH
+        // Fire and forget email with better error logging
         if (savedOrder.customer.email) {
-            sendOrderReceipt(savedOrder).catch(err =>
-                console.error('Background email error:', err.message)
-            );
+            sendOrderReceipt(savedOrder)
+                .then(result => {
+                    if (result) console.log('📧 Email sent successfully');
+                })
+                .catch(err => {
+                    console.error('❌ Email failed:', err.message);
+                    console.error('Email error details:', err);
+                });
         }
 
         sendOrderNotification(savedOrder).catch(err =>
