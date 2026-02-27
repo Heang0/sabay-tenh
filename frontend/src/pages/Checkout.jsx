@@ -182,12 +182,15 @@ const Checkout = () => {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-sans mb-1">Email (Optional)</label>
+                                            <label className="block text-sm font-sans mb-1">
+                                                Email <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 type="email"
                                                 name="email"
                                                 value={formData.email}
                                                 onChange={handleChange}
+                                                required
                                                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#005E7B] focus:border-transparent outline-none text-sm transition-all"
                                                 placeholder="Enter your email"
                                             />
@@ -301,11 +304,11 @@ const Checkout = () => {
                         </div>
 
                         {/* Payment Link Badge */}
-                        <div className="mt-4 p-3 bg-blue-50 rounded-lg text-center">
+                        {/* <div className="mt-4 p-3 bg-blue-50 rounded-lg text-center">
                             <p className="text-xs font-sans text-[#005E7B]">
                                 🔗 Payment link will open after order
                             </p>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>
