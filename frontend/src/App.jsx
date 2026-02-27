@@ -97,7 +97,6 @@ function AppContent() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        console.log('Fetching categories from:', API_URL); 
         const data = await fetchCategories();
         console.log('Categories loaded:', data);
         setCategories(data);
