@@ -297,8 +297,7 @@ function AppContent() {
                           <div
                             key={product._id}
                             onClick={() => navigate(`/product/${product.slug}`)}
-                            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer animate-fadeInUp"
-                            style={{ animationDelay: `${index * 0.05}s` }}  // Stagger by 0.05s each
+                            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer animate-fadeInUp flex flex-col h-full"
                           >
                             {/* Product Image */}
                             <div className="relative pb-[100%] bg-gray-100 overflow-hidden">
@@ -316,14 +315,14 @@ function AppContent() {
                             </div>
 
                             {/* Product Info - Only ONE language based on selection */}
-                            <div className="p-3">
+                            <div className="p-3 flex flex-col flex-grow">
                               {/* Show ONLY Khmer name when language is km, ONLY English when language is en */}
                               <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
                                 {language === 'km' ? product.nameKm : product.nameEn}
                               </h3>
 
                               {/* Price - always shown */}
-                              <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center justify-between mt-auto pt-2">
                                 <div>
                                   {product.salePrice ? (
                                     <div className="flex items-center gap-1">

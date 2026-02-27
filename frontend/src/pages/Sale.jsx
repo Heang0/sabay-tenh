@@ -67,7 +67,7 @@ const Sale = () => {
                         {language === 'km' ? 'ទំនិញបញ្ចុះតម្លៃ' : 'Sale Items'}
                     </h2>
                 </div>
-
+                <span className="text-xs text-gray-400 font-sans">{products.length} items</span>
             </div>
 
             {products.length === 0 ? (
@@ -85,68 +85,62 @@ const Sale = () => {
                 </div>
             ) : (
                 <>
-                    {/* Product Grid - EXACT same grid as home page */}
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
-                        {displayedProducts.map((product, index) => (
-                            <div
-                                key={product._id}
-                                onClick={() => navigate(`/product/${product.slug}`)}
-                                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer animate-fadeInUp"
-                                style={{ animationDelay: `${index * 0.05}s` }}  // Stagger by 0.05s each
-                            >
-                                {/* Product Image */}
-                                <div className="relative pb-[100%] bg-gray-100 overflow-hidden">
-                                    <img
-                                        src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
-                                        alt={product.nameEn}
-                                        className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                                        loading="lazy"
-                                    />
-                                    {product.onSale && (
-                                        <span className={`absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-full shadow-sm z-10 ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
-                                            {language === 'km' ? 'បញ្ចុះតម្លៃ' : 'Sale'}
+                    {/* Product Grid - EXACT same as home page */}
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {displayedProducts.map((product) => {
+                            const discount = getDiscountPercentage(product.price, product.salePrice);
+
+                            return (
+                                <div
+                                    key={product._id}
+                                    onClick={() => navigate(`/product/${product.slug}`)}
+                                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full"
+                                >
+                                    {/* Product Image */}
+                                    <div className="relative pb-[100%] bg-gray-200 overflow-hidden flex-shrink-0">
+                                        <img
+                                            src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
+                                            alt={product.nameEn}
+                                            className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                            loading="lazy"
+                                        />
+                                        {/* Sale Badge - percentage */}
+                                        <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-full shadow-sm z-10">
+                                            -{discount}%
                                         </span>
-                                    )}
-                                </div>
+                                    </div>
 
-                                {/* Product Info - Only ONE language based on selection */}
-                                <div className="p-3">
-                                    {/* Show ONLY Khmer name when language is km, ONLY English when language is en */}
-                                    <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
-                                        {language === 'km' ? product.nameKm : product.nameEn}
-                                    </h3>
+                                    {/* Product Info - EXACT same as home page */}
+                                    <div className="p-3 flex flex-col flex-grow">
+                                        {/* Product Name - Only ONE language */}
+                                        <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
+                                            {language === 'km' ? product.nameKm : product.nameEn}
+                                        </h3>
 
-                                    {/* Price - always shown */}
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div>
-                                            {product.salePrice ? (
-                                                <div className="flex items-center gap-1">
-                                                    <span className="font-sans text-sm font-bold text-red-600">
-                                                        ${product.salePrice}
-                                                    </span>
-                                                    <span className="font-sans text-xs text-gray-400 line-through">
-                                                        ${product.price}
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                <span className="font-sans text-sm font-bold text-gray-800">
+                                        {/* Price and Cart - pushed to bottom */}
+                                        <div className="flex items-center justify-between mt-auto pt-2">
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-sans text-sm font-bold text-red-600">
+                                                    ${product.salePrice}
+                                                </span>
+                                                <span className="font-sans text-xs text-gray-400 line-through">
                                                     ${product.price}
                                                 </span>
-                                            )}
+                                            </div>
+                                            <button
+                                                className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    addToCart(product, 1);
+                                                }}
+                                            >
+                                                <ShoppingCart size={18} />
+                                            </button>
                                         </div>
-                                        <button
-                                            className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                addToCart(product, 1);
-                                            }}
-                                        >
-                                            <ShoppingCart size={18} />
-                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Load More Button */}

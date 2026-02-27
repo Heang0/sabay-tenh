@@ -38,12 +38,12 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('cart', JSON.stringify(cart));
     }, [cart]);
 
-    // Auto-hide notification after 2.5 seconds
+    // Auto-hide notification after 3 seconds
     useEffect(() => {
         if (notification) {
             const timer = setTimeout(() => {
                 setNotification(null);
-            }, 2500);
+            }, 3000); // Changed from 2500 to 3000
             return () => clearTimeout(timer);
         }
     }, [notification]);

@@ -15,6 +15,16 @@ const ProductDetail = () => {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
 
+    // Pagination for related products
+    const [relatedVisibleCount, setRelatedVisibleCount] = useState(8);
+    const relatedPerPage = 8;
+    const displayedRelated = relatedProducts.slice(0, relatedVisibleCount);
+    const hasMoreRelated = relatedVisibleCount < relatedProducts.length;
+
+    const loadMoreRelated = () => {
+        setRelatedVisibleCount(prev => prev + relatedPerPage);
+    };
+
     useEffect(() => {
         const loadProduct = async () => {
             try {
@@ -24,8 +34,7 @@ const ProductDetail = () => {
 
                 const allProducts = await fetchProducts();
                 const related = allProducts
-                    .filter(p => p.category === productData.category && p._id !== productData._id)
-                    .slice(0, 4);
+                    .filter(p => p.category === productData.category && p._id !== productData._id);
                 setRelatedProducts(related);
 
             } catch (error) {
@@ -103,12 +112,11 @@ const ProductDetail = () => {
                 {/* Product Info - padding only on mobile */}
                 <div className="px-4 md:px-0 py-4 md:py-0 space-y-3">
                     {/* Title - Only ONE language */}
+                    {/* Title - Only ONE language */}
                     <div>
-                        <h1 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base sm:text-base md:text-lg lg:text-xl font-medium text-gray-800 mb-0.5`}>
+                        <h1 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-lg sm:text-base md:text-lg lg:text-xl font-medium text-gray-800 mb-0.5`}>
                             {language === 'km' ? product.nameKm : product.nameEn}
                         </h1>
-                        {/* Optional: Remove or keep the English subtitle */}
-                        {/* <p className="text-sm text-gray-500 font-sans">{product.nameEn}</p> */}
                     </div>
 
                     {/* Price */}
@@ -184,80 +192,96 @@ const ProductDetail = () => {
                 </div>
             </div>
 
-            {/* You May Also Like Section - COMPLETELY SEPARATE, edge-to-edge */}
+            {/* You May Also Like Section - All products in same category */}
             {relatedProducts.length > 0 && (
                 <div className="w-full border-t mt-4">
                     {/* Title with mobile padding */}
-                    <h2 className="text-base font-semibold mb-3 mt-4 px-4 md:px-0 font-khmer text-gray-800">
-                        {language === 'km' ? 'ផលិតផលស្រដៀងគ្នា' : 'You May Also Like'}
-                    </h2>
+                    <div className="flex items-center justify-between px-4 md:px-0 mt-4">
+                        <h2 className="text-base font-semibold font-khmer text-gray-800">
+                            {language === 'km' ? 'ផលិតផលស្រដៀងគ្នា' : 'You May Also Like'}
+                        </h2>
+                        <span className="text-xs text-gray-400 font-sans">
+                            {relatedProducts.length} {language === 'km' ? 'មុខទំនិញ' : 'items'}
+                        </span>
+                    </div>
 
-                    {/* Grid - EXACT same as home/sale page */}
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
-                        {relatedProducts.map((related) => {
-                            const discount = getDiscountPercentage(related.price, related.salePrice);
+                    {/* Grid - edge-to-edge on mobile (px-0) */}
+                    <div className="px-0 md:px-0 mt-3">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+                            {displayedRelated.map((product) => {
+                                const discount = getDiscountPercentage(product.price, product.salePrice);
 
-                            return (
-                                <div
-                                    key={related._id}
-                                    onClick={() => navigate(`/product/${related.slug}`)}
-                                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
-                                >
-                                    {/* Product Image - same aspect ratio */}
-                                    <div className="relative pb-[100%] bg-gray-200 overflow-hidden">
-                                        <img
-                                            src={related.image?.replace('/upload/', '/upload/f_auto,q_auto,w_200/') || 'https://via.placeholder.com/200x200'}
-                                            alt={related.nameEn}
-                                            className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                        />
-                                        {related.onSale && (
-                                            <span className={`absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs sm:text-sm rounded z-10 ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
-                                                -{discount}%
-                                            </span>
-                                        )}
-                                    </div>
+                                return (
+                                    <div
+                                        key={product._id}
+                                        onClick={() => navigate(`/product/${product.slug}`)}
+                                        className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full"
+                                    >
+                                        {/* Product Image */}
+                                        <div className="relative pb-[100%] bg-gray-200 overflow-hidden flex-shrink-0">
+                                            <img
+                                                src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
+                                                alt={product.nameEn}
+                                                className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                                loading="lazy"
+                                            />
+                                            {product.onSale && (
+                                                <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-full shadow-sm z-10">
+                                                    -{discount}%
+                                                </span>
+                                            )}
+                                        </div>
 
-                                    {/* Product Info - EXACT padding from home/sale page */}
-                                    <div className="p-2 sm:p-3 md:p-4">
-                                        {/* Product Name - Only ONE language with home page sizing */}
-                                        <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-xs sm:text-sm md:text-base lg:text-lg font-medium text-gray-800 mb-0.5 sm:mb-1 line-clamp-2`}>
-                                            {language === 'km' ? related.nameKm : related.nameEn}
-                                        </h3>
+                                        {/* Product Info - EXACT same as home page */}
+                                        <div className="p-3 flex flex-col flex-grow">
+                                            <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
+                                                {language === 'km' ? product.nameKm : product.nameEn}
+                                            </h3>
 
-                                        {/* Price - same layout as home/sale page */}
-                                        <div className="flex items-center justify-between flex-wrap gap-1">
-                                            <div>
-                                                {related.salePrice ? (
-                                                    <div className="flex items-center gap-1 flex-wrap">
-                                                        <span className="font-sans text-xs sm:text-sm md:text-base lg:text-lg font-bold text-red-600">
-                                                            ${related.salePrice}
+                                            <div className="flex items-center justify-between mt-auto pt-2">
+                                                <div>
+                                                    {product.salePrice ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="font-sans text-sm font-bold text-red-600">
+                                                                ${product.salePrice}
+                                                            </span>
+                                                            <span className="font-sans text-xs text-gray-400 line-through">
+                                                                ${product.price}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-sans text-sm font-bold text-gray-800">
+                                                            ${product.price}
                                                         </span>
-                                                        <span className="font-sans text-xs text-gray-400 line-through">
-                                                            ${related.price}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="font-sans text-sm sm:text-base md:text-lg font-bold text-gray-800">
-                                                        ${related.price}
-                                                    </span>
-                                                )}
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        addToCart(product, 1);
+                                                    }}
+                                                >
+                                                    <ShoppingCart size={18} />
+                                                </button>
                                             </div>
-
-                                            {/* Add to Cart Button - same size as home page */}
-                                            <button
-                                                className="p-1.5 sm:p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    addToCart(related, 1);
-                                                }}
-                                            >
-                                                <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
+
+                        {/* Load More Button */}
+                        {hasMoreRelated && (
+                            <div className="text-center mt-6">
+                                <button
+                                    onClick={loadMoreRelated}
+                                    className="px-6 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-sans text-sm font-medium shadow-sm hover:shadow"
+                                >
+                                    {language === 'km' ? 'ផ្ទុកបន្ថែម' : 'Load More'} ({displayedRelated.length} / {relatedProducts.length})
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
