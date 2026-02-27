@@ -18,17 +18,23 @@ const ProductList = () => {
 
     const API_URL = import.meta.env.DEV
         ? 'http://localhost:5000/api'
-        : `${window.location.origin}/api`;
+        : 'https://sabay-tenh.onrender.com/api';
 
-    // Fetch categories - FIXED VERSION
+    // Fetch categories
     const fetchCategories = async () => {
         try {
+            console.log('Fetching categories from:', `${API_URL}/categories`); // Debug
             const response = await fetch(`${API_URL}/categories`);
+
             if (!response.ok) {
+                console.log('Response status:', response.status);
+                const text = await response.text();
+                console.log('Response text:', text);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             const data = await response.json();
-            console.log('✅ Categories fetched:', data); // Debug log
+            console.log('✅ Categories fetched:', data);
             setCategories(data);
             return data;
         } catch (err) {
