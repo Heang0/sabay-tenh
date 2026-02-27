@@ -31,17 +31,17 @@ const ProductList = () => {
             return [];
         }
     };
-
-    // Load products and categories together
     useEffect(() => {
         const loadData = async () => {
             setLoading(true);
             try {
-                // Load both products and categories in parallel
                 const [productsData, categoriesData] = await Promise.all([
                     fetchProducts(),
                     fetchCategories()
                 ]);
+
+                console.log('Products loaded:', productsData.length);
+                console.log('Categories loaded:', categoriesData); // Add this
 
                 setProducts(productsData);
                 setFilteredProducts(productsData);
@@ -91,12 +91,16 @@ const ProductList = () => {
     const getCategoryName = (categoryId) => {
         if (!categoryId) return 'Uncategorized';
 
-        // If categories exist, find the category
-        if (categories && categories.length > 0) {
-            const category = categories.find(c => c._id === categoryId);
-            if (category) return category.nameEn;
+        // Find the category directly
+        const category = categories.find(c => c._id === categoryId);
+
+        // Return name if found, otherwise show "Unknown" with ID for debugging
+        if (category) {
+            return category.nameEn;
+        } else {
+            // This shouldn't happen now since IDs match!
+            return 'Unknown';
         }
-        return 'Unknown';
     };
 
     // Handle delete
