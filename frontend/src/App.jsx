@@ -97,7 +97,9 @@ function AppContent() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const data = await fetchCategories(); // Using the API function
+        console.log('Fetching categories from:', API_URL); 
+        const data = await fetchCategories();
+        console.log('Categories loaded:', data);
         setCategories(data);
       } catch (err) {
         console.error('Failed to load categories:', err);
@@ -105,6 +107,7 @@ function AppContent() {
     };
     loadCategories();
   }, []);
+
   // Show back to top button when scrolling down
   useEffect(() => {
     const handleScroll = () => {
