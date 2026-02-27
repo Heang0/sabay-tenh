@@ -13,43 +13,49 @@ const ProductList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
-    const [stockFilter, setStockFilter] = useState('all'); // 'all', 'inStock', 'outOfStock'
+    const [stockFilter, setStockFilter] = useState('all');
     const navigate = useNavigate();
 
     const API_URL = import.meta.env.DEV
         ? 'http://localhost:5000/api'
         : `${window.location.origin}/api`;
 
-    // Load categories
+    // Fetch categories function
     const fetchCategories = async () => {
         try {
             const response = await fetch(`${API_URL}/categories`);
             const data = await response.json();
-            setCategories(data);
+            return data; // Return data instead of setting state
         } catch (err) {
             console.error('Failed to load categories:', err);
+            return [];
         }
     };
 
-    // Load products
-    const loadProducts = async () => {
-        try {
-            setLoading(true);
-            const data = await fetchProducts();
-            setProducts(data);
-            setFilteredProducts(data);
-            setError(null);
-        } catch (err) {
-            setError('Failed to load products');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Load products and categories together
     useEffect(() => {
-        loadProducts();
-        fetchCategories();
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Load both products and categories in parallel
+                const [productsData, categoriesData] = await Promise.all([
+                    fetchProducts(),
+                    fetchCategories()
+                ]);
+
+                setProducts(productsData);
+                setFilteredProducts(productsData);
+                setCategories(categoriesData);
+                setError(null);
+            } catch (err) {
+                setError('Failed to load data');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, []);
 
     // Filter products when search, category, or stock filter changes
@@ -84,6 +90,12 @@ const ProductList = () => {
     // Helper function to get category name from ID
     const getCategoryName = (categoryId) => {
         if (!categoryId) return 'Uncategorized';
+
+        // Check if categories is still loading or empty
+        if (!categories || categories.length === 0) {
+            return 'Loading...';
+        }
+
         const category = categories.find(c => c._id === categoryId);
         return category ? category.nameEn : 'Unknown';
     };
@@ -131,7 +143,7 @@ const ProductList = () => {
             <div className="text-center py-20">
                 <p className="text-red-600 font-sans">{error}</p>
                 <button
-                    onClick={loadProducts}
+                    onClick={() => window.location.reload()}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                     Try Again
