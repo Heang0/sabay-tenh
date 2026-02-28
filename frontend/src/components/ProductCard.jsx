@@ -68,7 +68,7 @@ const ProductCard = ({ product, index }) => {
             </div>
 
             <div className="p-3 flex flex-col flex-grow">
-                <h3 className={`${km ? 'font-khmer' : 'font-sans'} text-sm sm:text-base font-medium text-gray-800 mb-1.5 line-clamp-2 leading-snug group-hover:text-[#005E7B] transition-colors`}>
+                <h3 className={`${km ? 'font-khmer' : 'font-sans'} text-[15px] sm:text-[16px] font-medium text-gray-800 mb-1.5 line-clamp-2 leading-snug group-hover:text-[#005E7B] transition-colors`}>
                     {km ? product.nameKm : product.nameEn}
                 </h3>
 

@@ -326,7 +326,7 @@ function AppContent() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3 md:gap-4">
                         {displayedProducts.map((product, index) => (
                           <ProductCard key={product._id} product={product} index={index} />
                         ))}
