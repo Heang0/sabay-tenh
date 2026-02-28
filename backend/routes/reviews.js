@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
+const User = require('../models/User');
 const userAuth = require('../middleware/userAuth');
 
 // GET reviews for a product (public)
@@ -52,9 +53,11 @@ router.post('/', userAuth, async (req, res) => {
 
         if (existing) {
             // Update existing review
+            const user = await User.findById(req.user.id);
             existing.rating = rating;
             existing.comment = comment || '';
             existing.userName = userName;
+            existing.userPhoto = user?.photoURL || '';
             await existing.save();
 
             return res.json({
@@ -65,10 +68,12 @@ router.post('/', userAuth, async (req, res) => {
         }
 
         // Create new review
+        const user = await User.findById(req.user.id);
         const review = new Review({
             userId: req.user.id,
             productId,
             userName,
+            userPhoto: user?.photoURL || '',
             rating,
             comment: comment || ''
         });

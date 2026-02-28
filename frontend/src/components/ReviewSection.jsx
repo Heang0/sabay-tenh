@@ -174,8 +174,17 @@ const ReviewSection = ({ productId }) => {
                         <div key={review._id} className="bg-white rounded-lg p-4 border border-gray-100">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                                        <User size={14} className="text-gray-500" />
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-gray-100 border border-gray-100">
+                                        {review.userPhoto ? (
+                                            <img
+                                                src={review.userPhoto.replace('s96-c', 's64-c')}
+                                                alt={review.userName}
+                                                className="w-full h-full object-cover"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        ) : (
+                                            <User size={14} className="text-gray-500" />
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-800 font-sans">{review.userName}</p>
