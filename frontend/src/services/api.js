@@ -45,14 +45,15 @@ export const fetchProductById = async (id) => {
 
 // ========== ORDER ROUTES ==========
 
-// Create new order (checkout)
-export const createOrder = async (orderData) => {
+// Create new order (checkout) — pass token to link order to logged-in user
+export const createOrder = async (orderData, token = null) => {
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const response = await fetch(`${API_URL}/orders`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(orderData)
     });
 
@@ -191,6 +192,167 @@ export const deleteProduct = async (id) => {
     return await response.json();
   } catch (error) {
     console.error(`Error deleting product ${id}:`, error);
+    throw error;
+  }
+};
+
+// ========== FEATURED PRODUCTS ==========
+
+export const fetchFeaturedProducts = async () => {
+  try {
+    const response = await fetch(`${API_URL}/products/featured/home`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    throw error;
+  }
+};
+
+// ========== REVIEW ROUTES ==========
+
+export const fetchProductReviews = async (productId) => {
+  try {
+    const response = await fetch(`${API_URL}/reviews/product/${productId}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    throw error;
+  }
+};
+
+export const submitReview = async (reviewData) => {
+  const token = localStorage.getItem('userToken');
+  try {
+    const response = await fetch(`${API_URL}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(reviewData)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error submitting review:', error);
+    throw error;
+  }
+};
+
+export const deleteReview = async (id) => {
+  const token = localStorage.getItem('userToken');
+  try {
+    const response = await fetch(`${API_URL}/reviews/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    throw error;
+  }
+};
+
+// ========== COUPON ROUTES ==========
+
+export const validateCoupon = async (code, orderTotal) => {
+  try {
+    const response = await fetch(`${API_URL}/coupons/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, orderTotal })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error validating coupon:', error);
+    throw error;
+  }
+};
+
+export const fetchCoupons = async () => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`${API_URL}/coupons`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching coupons:', error);
+    throw error;
+  }
+};
+
+export const createCoupon = async (couponData) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`${API_URL}/coupons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(couponData)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating coupon:', error);
+    throw error;
+  }
+};
+
+export const updateCoupon = async (id, couponData) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`${API_URL}/coupons/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(couponData)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating coupon:', error);
+    throw error;
+  }
+};
+
+export const deleteCoupon = async (id) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`${API_URL}/coupons/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting coupon:', error);
+    throw error;
+  }
+};
+
+// ========== USER ORDER HISTORY ==========
+
+export const fetchUserOrders = async () => {
+  const token = localStorage.getItem('userToken');
+  try {
+    const response = await fetch(`${API_URL}/users/orders`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
     throw error;
   }
 };

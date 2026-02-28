@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { createOrder } from '../services/api';
-import { ArrowLeft, Truck, Phone, MapPin, Mail, FileText, CreditCard, Shield, Lock, ExternalLink } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { createOrder, validateCoupon } from '../services/api';
+import { ArrowLeft, Truck, Phone, MapPin, Mail, FileText, CreditCard, Shield, Lock, ExternalLink, Tag } from 'lucide-react';
 import abaLogo from '../assets/ABA BANK.svg';
 
 const Checkout = () => {
     const navigate = useNavigate();
     const { cart, getCartTotal, clearCart } = useCart();
     const { language } = useLanguage();
+    const { getToken } = useUser();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
@@ -18,6 +20,45 @@ const Checkout = () => {
         email: '',
         note: ''
     });
+
+    // Coupon state
+    const [couponCode, setCouponCode] = useState('');
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponApplied, setCouponApplied] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState('');
+
+    const subtotal = getCartTotal();
+    const finalTotal = Math.max(0, subtotal - couponDiscount);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError('');
+        try {
+            const data = await validateCoupon(couponCode, subtotal);
+            if (data.success) {
+                setCouponDiscount(data.coupon.discount);
+                setCouponApplied(data.coupon);
+                setCouponError('');
+            } else {
+                setCouponDiscount(0);
+                setCouponApplied(null);
+                setCouponError(data.message || 'Invalid coupon');
+            }
+        } catch (error) {
+            setCouponError('Failed to validate coupon');
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setCouponCode('');
+        setCouponDiscount(0);
+        setCouponApplied(null);
+        setCouponError('');
+    };
 
     // Handle empty cart case first
     if (cart.length === 0) {
@@ -52,6 +93,9 @@ const Checkout = () => {
 
         setLoading(true);
 
+        // Get Firebase token to link order to logged-in user (if any)
+        const token = await getToken();
+
         const total = getCartTotal();
         const orderData = {
             customer: formData,
@@ -63,14 +107,16 @@ const Checkout = () => {
                 quantity: item.quantity,
                 image: item.image
             })),
-            subtotal: total,
-            total: total,
+            subtotal: subtotal,
+            total: finalTotal,
+            couponCode: couponApplied ? couponApplied.code : null,
+            discount: couponDiscount,
             paymentMethod: 'ABA Payway Link',
             paymentStatus: 'pending'
         };
 
         try {
-            const response = await createOrder(orderData);
+            const response = await createOrder(orderData, token);
             console.log('Order created:', response);
 
             // Clear cart
@@ -80,13 +126,13 @@ const Checkout = () => {
             if (response.order && response.order.id) {
                 // Create dynamic payment link with amount
                 const baseLink = 'https://link.payway.com.kh/ABAPAYdj419233l';
-                const paymentLink = `${baseLink}?amount=${total}&orderId=${response.order.orderNumber}`;
+                const paymentLink = `${baseLink}?amount=${finalTotal}&orderId=${response.order.orderNumber}`;
 
                 // Open payment link in new tab
                 window.open(paymentLink, '_blank');
 
                 // Show success message
-                alert(`Order placed! Please complete payment of $${total} using the link that opened.`);
+                alert(`Order placed! Please complete payment of $${finalTotal.toFixed(2)} using the link that opened.`);
 
                 // Redirect to order tracking page
                 navigate(`/order-tracking/${response.order.id}`);
@@ -223,7 +269,7 @@ const Checkout = () => {
                                         <div className="flex-1">
                                             <h3 className="font-semibold font-sans">ABA Payway Link</h3>
                                             <p className="text-sm text-gray-600 font-sans">
-                                                You'll pay ${getCartTotal().toFixed(2)} via secure payment link
+                                                You'll pay ${finalTotal.toFixed(2)} via secure payment link
                                             </p>
                                         </div>
                                         <ExternalLink size={20} className="text-[#005E7B]" />
@@ -251,7 +297,7 @@ const Checkout = () => {
                                 ) : (
                                     <>
                                         <Lock size={18} />
-                                        <span>Place Order & Pay • ${getCartTotal().toFixed(2)}</span>
+                                        <span>Place Order & Pay • ${finalTotal.toFixed(2)}</span>
                                     </>
                                 )}
                             </button>
@@ -291,7 +337,43 @@ const Checkout = () => {
                         <div className="border-t border-gray-200 pt-4 space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="font-sans text-gray-600">Subtotal</span>
-                                <span className="font-sans font-medium">${getCartTotal().toFixed(2)}</span>
+                                <span className="font-sans font-medium">${subtotal.toFixed(2)}</span>
+                            </div>
+
+                            {/* Coupon Input */}
+                            <div className="py-2">
+                                {couponApplied ? (
+                                    <div className="flex items-center justify-between bg-green-50 p-2 rounded-lg">
+                                        <div className="flex items-center gap-1">
+                                            <Tag size={14} className="text-green-600" />
+                                            <span className="text-sm font-mono font-bold text-green-700">{couponApplied.code}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-sans text-green-600">-${couponDiscount.toFixed(2)}</span>
+                                            <button onClick={removeCoupon} className="text-xs text-red-500 hover:underline font-sans">Remove</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                placeholder="Coupon code"
+                                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-[#005E7B] focus:border-transparent outline-none"
+                                            />
+                                            <button
+                                                onClick={handleApplyCoupon}
+                                                disabled={couponLoading || !couponCode.trim()}
+                                                className="px-3 py-2 bg-[#005E7B] text-white rounded-lg text-sm font-sans hover:bg-[#004b63] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {couponLoading ? '...' : 'Apply'}
+                                            </button>
+                                        </div>
+                                        {couponError && <p className="text-xs text-red-500 mt-1 font-sans">{couponError}</p>}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="font-sans text-gray-600">Shipping</span>
@@ -299,7 +381,7 @@ const Checkout = () => {
                             </div>
                             <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
                                 <span className="font-sans">Total</span>
-                                <span className="font-sans text-[#005E7B]">${getCartTotal().toFixed(2)}</span>
+                                <span className="font-sans text-[#005E7B]">${finalTotal.toFixed(2)}</span>
                             </div>
                         </div>
 
@@ -312,7 +394,7 @@ const Checkout = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

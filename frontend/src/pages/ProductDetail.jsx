@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useUser } from '../context/UserContext';
+import { useWishlist } from '../context/WishlistContext';
+import ReviewSection from '../components/ReviewSection';
 import { ShoppingCart, ArrowLeft, Heart, Minus, Plus } from 'lucide-react';
 import { fetchProductBySlug, fetchProducts } from '../services/api';
 
@@ -10,6 +13,8 @@ const ProductDetail = () => {
     const navigate = useNavigate();
     const { addToCart } = useCart();
     const { language } = useLanguage();
+    const { isLoggedIn } = useUser();
+    const { isInWishlist, toggleWishlist } = useWishlist();
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -172,12 +177,24 @@ const ProductDetail = () => {
                         <button
                             onClick={handleAddToCart}
                             disabled={!product.inStock}
-                            className="w-full flex items-center justify-center gap-1.5 bg-[#005E7B] text-white py-3 px-2 rounded-lg hover:bg-[#004b63] disabled:bg-gray-200 disabled:text-gray-400 transition-colors text-xs sm:text-sm whitespace-normal break-words"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-[#005E7B] text-white py-3 px-2 rounded-lg hover:bg-[#004b63] disabled:bg-gray-200 disabled:text-gray-400 transition-colors text-xs sm:text-sm whitespace-normal break-words"
                         >
                             <ShoppingCart size={16} className="flex-shrink-0" />
                             <span className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-center leading-tight`}>
                                 {language === 'km' ? 'បន្ថែមក្នុងកន្ត្រក' : 'Add to Cart'}
                             </span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (!isLoggedIn) { navigate('/user-login'); return; }
+                                toggleWishlist(product._id);
+                            }}
+                            className={`w-12 h-12 flex items-center justify-center border rounded-lg transition-colors ${isInWishlist(product._id)
+                                    ? 'border-red-200 bg-red-50 text-red-500'
+                                    : 'border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500'
+                                }`}
+                        >
+                            <Heart size={20} className={isInWishlist(product._id) ? 'fill-red-500' : ''} />
                         </button>
                     </div>
 
@@ -190,6 +207,9 @@ const ProductDetail = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Reviews Section */}
+                {product && <ReviewSection productId={product._id} />}
             </div>
 
             {/* You May Also Like Section - All products in same category */}

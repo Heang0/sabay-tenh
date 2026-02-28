@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const admin = require('firebase-admin');
 const Order = require('../models/Order');
+const User = require('../models/User');
+const Coupon = require('../models/Coupon');
 const authMiddleware = require('../middleware/auth');
 const { sendOrderReceipt } = require('../services/emailService');
 const { sendOrderNotification } = require('../services/telegram');
@@ -42,9 +45,36 @@ router.post('/', async (req, res) => {
         const orderNumber = generateOrderNumber();
         console.log('Generated order number:', orderNumber);
 
+        // Try to extract userId from Firebase token if user is logged in
+        let userId = null;
+        try {
+            const token = req.headers.authorization?.split(' ')[1];
+            if (token) {
+                const decodedToken = await admin.auth().verifyIdToken(token);
+                const user = await User.findOne({ firebaseUid: decodedToken.uid });
+                if (user) userId = user._id;
+            }
+        } catch (e) { /* Guest checkout - no user */ }
+
+        // Handle coupon if provided
+        let couponCode = req.body.couponCode || null;
+        let discount = req.body.discount || 0;
+        if (couponCode) {
+            try {
+                const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+                if (coupon) {
+                    coupon.usedCount += 1;
+                    await coupon.save();
+                }
+            } catch (e) { console.error('Coupon increment error:', e); }
+        }
+
         // Create order data
         const orderData = {
             orderNumber: orderNumber,
+            userId: userId,
+            couponCode: couponCode,
+            discount: discount,
             customer: {
                 fullName: req.body.customer.fullName,
                 phone: req.body.customer.phone,

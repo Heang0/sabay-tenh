@@ -3,7 +3,12 @@ import { useState, useEffect } from 'react';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import CartSidebar from './components/CartSidebar';
+import HeroSlider from './components/HeroSlider';
 import Login from './pages/Login';
+import UserLogin from './pages/UserLogin';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
+import WishlistPage from './pages/WishlistPage';
 import Sale from './pages/Sale';
 import Contact from './pages/Contact';
 import OrderTracking from './pages/OrderTracking';
@@ -12,27 +17,35 @@ import Checkout from './pages/Checkout';
 import PaymentPage from './pages/PaymentPage';
 import OrderSuccess from './pages/OrderSuccess';
 import AddProduct from './pages/admin/AddProduct';
+import CouponManagement from './pages/admin/CouponManagement';
 import { useLanguage } from './context/LanguageContext';
-import { fetchProducts, fetchCategories } from './services/api';
+import { fetchProducts, fetchCategories, fetchFeaturedProducts } from './services/api';
 import { useSearch } from './context/SearchContext';
+import { useWishlist } from './context/WishlistContext';
+import { useUser } from './context/UserContext';
 import ProductList from './pages/admin/ProductList';
 import EditProduct from './pages/admin/EditProduct';
 import Dashboard from './pages/admin/Dashboard';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
-import { ShoppingCart, Search } from 'lucide-react';
-import bannerImage from './assets/bannner.jpg';
+import { ShoppingCart, Search, Heart, Star, Facebook, MessageCircle, Mail, Phone } from 'lucide-react';
 import { useCart } from './context/CartContext';
+import ScrollToTop from './components/ScrollToTop';
+import ProductCard from './components/ProductCard';
 
 function AppContent() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [onSaleProducts, setOnSaleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
   const { addToCart } = useCart();
   const { language } = useLanguage();
   const { searchQuery } = useSearch();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { isLoggedIn } = useUser();
   const navigate = useNavigate();
 
   // Route checks
@@ -41,33 +54,26 @@ function AppContent() {
   const isProductRoute = location.pathname.startsWith('/product');
   const isPaymentRoute = location.pathname.startsWith('/payment');
   const isOrderSuccessRoute = location.pathname.startsWith('/order-success');
-  const hideHeader = isAdminRoute || isCheckoutRoute || isPaymentRoute || isOrderSuccessRoute;
+  const isAuthRoute = ['/user-login', '/register', '/login'].includes(location.pathname);
+  const hideHeader = isAdminRoute || isCheckoutRoute || isPaymentRoute || isOrderSuccessRoute || isAuthRoute;
 
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [visibleCount, setVisibleCount] = useState(20);
   const productsPerPage = 20;
 
-  // 👇 ADD THESE NEW LINES
   const [showBackToTop, setShowBackToTop] = useState(false);
-  // Filter products by category AND search
+
   const filteredProducts = products.filter(product => {
-    // Category filter
     const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
-
-    // Search filter - if no search query, just return category match
     if (!searchQuery) return categoryMatch;
-
-    // Case-insensitive search in both languages and description
     const searchLower = searchQuery.toLowerCase();
     const nameKmMatch = product.nameKm.toLowerCase().includes(searchLower);
     const nameEnMatch = product.nameEn.toLowerCase().includes(searchLower);
     const descMatch = product.description?.toLowerCase().includes(searchLower) || false;
-
     return categoryMatch && (nameKmMatch || nameEnMatch || descMatch);
   });
 
-  // Pagination
   const displayedProducts = filteredProducts.slice(0, visibleCount);
   const hasMore = visibleCount < filteredProducts.length;
 
@@ -106,69 +112,104 @@ function AppContent() {
     loadCategories();
   }, []);
 
-  // Show back to top button when scrolling down
+  // Load featured products for homepage
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 400) {
-        setShowBackToTop(true);
-      } else {
-        setShowBackToTop(false);
+    const loadFeatured = async () => {
+      try {
+        const data = await fetchFeaturedProducts();
+        setNewArrivals(data.newArrivals || []);
+        setOnSaleProducts(data.onSale || []);
+      } catch (err) {
+        console.error('Failed to load featured:', err);
       }
     };
+    loadFeatured();
+  }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Reset pagination when category or search changes
   useEffect(() => {
     setVisibleCount(20);
   }, [selectedCategory, searchQuery]);
 
-
   const handleCategoryClick = (categoryId) => {
     setSelectedCategory(categoryId);
   };
+
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
 
-  const clearSearch = () => {
-    // This will be handled by the header component
-  };
+  // Horizontal scroll section component
+  const ProductScrollSection = ({ title, products: sectionProducts, viewAllLink }) => (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className={`text-xl sm:text-2xl font-semibold ${language === 'km' ? 'font-khmer' : 'font-sans'} text-gray-800`}>
+          {title}
+        </h2>
+        {viewAllLink && (
+          <button
+            onClick={() => navigate(viewAllLink)}
+            className={`text-sm text-[#005E7B] hover:underline ${language === 'km' ? 'font-khmer' : 'font-sans'}`}
+          >
+            {language === 'km' ? 'មើលទាំងអស់' : 'View All'}
+          </button>
+        )}
+      </div>
+      <div className="overflow-x-auto scrollbar-hide pb-2">
+        <div className="flex gap-3 min-w-max">
+          {sectionProducts.map((product, index) => (
+            <div key={product._id} className="w-40 sm:w-48 flex-shrink-0">
+              <ProductCard product={product} index={index} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header - hidden on admin/checkout pages */}
       {!hideHeader && <Header />}
-
-      {/* Cart Sidebar */}
       <CartSidebar />
 
-      {/* Main Content - flex-1 makes it take available space */}
-      <main className={`flex-1 container mx-auto px-4 ${isAdminRoute ? 'pt-0 pb-8' :
+      <main className={`flex-1 container mx-auto px-2 sm:px-4 ${isAdminRoute ? 'pt-0 pb-8' :
         isProductRoute ? 'pt-2 pb-8' :
           isCheckoutRoute ? 'pt-0 pb-8' :
             isPaymentRoute ? 'pt-0 pb-8' :
-              isOrderSuccessRoute ? 'pt-0 pb-8' : 'pt-4 sm:pt-6 pb-8'
+              isOrderSuccessRoute ? 'pt-0 pb-8' :
+                isAuthRoute ? 'pt-0 pb-0' : 'pt-4 sm:pt-6 pb-8'
         }`}>
         <Routes>
           {/* Home Route */}
           <Route path="/" element={
             <>
-              {/* Banner Image */}
-              <div className="relative w-full mb-4 sm:mb-6 rounded-xl overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#005E7B]/20 to-transparent z-10"></div>
-                <img
-                  src={bannerImage}
-                  alt="Banner"
-                  className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
+              {/* Hero Slider */}
+              <HeroSlider language={language} />
+
+              {/* New Arrivals Section */}
+              {newArrivals.length > 0 && (
+                <ProductScrollSection
+                  title={language === 'km' ? '🆕 ផលិតផលថ្មី' : '🆕 New Arrivals'}
+                  products={newArrivals}
                 />
-              </div>
+              )}
+
+              {/* On Sale Section */}
+              {onSaleProducts.length > 0 && (
+                <ProductScrollSection
+                  title={language === 'km' ? '🔥 កំពុងបញ្ចុះតម្លៃ' : '🔥 On Sale'}
+                  products={onSaleProducts}
+                  viewAllLink="/sale"
+                />
+              )}
 
               {/* Search Results Indicator */}
               {searchQuery && (
@@ -194,10 +235,9 @@ function AppContent() {
                   </div>
                   <div className="overflow-x-auto scrollbar-hide pb-2">
                     <div className="flex space-x-2 min-w-max px-1">
-                      {/* All Products Button */}
                       <button
                         onClick={() => handleCategoryClick('all')}
-                        className={`group flex items-center space-x-2 px-4 sm:px-4 py-2 sm:py-2 rounded-full shadow-sm transition-all whitespace-nowrap text-base sm:text-base ${selectedCategory === 'all'
+                        className={`group flex items-center space-x-2 px-4 py-2 rounded-full shadow-sm transition-all whitespace-nowrap text-base ${selectedCategory === 'all'
                           ? 'bg-[#005E7B] text-white'
                           : 'bg-white border border-gray-200 hover:border-[#005E7B] hover:bg-[#005E7B]/5'
                           }`}
@@ -206,15 +246,13 @@ function AppContent() {
                           {language === 'km' ? 'ផលិតផលទាំងអស់' : 'All Products'}
                         </span>
                       </button>
-
-                      {/* Category Buttons */}
                       {categories.filter(category =>
                         products.some(product => product.category === category._id)
                       ).map((category) => (
                         <button
                           key={category._id}
                           onClick={() => handleCategoryClick(category._id)}
-                          className={`group flex items-center space-x-2 px-4 sm:px-4 py-2 sm:py-2 rounded-full shadow-sm transition-all whitespace-nowrap text-base sm:text-base ${selectedCategory === category._id
+                          className={`group flex items-center space-x-2 px-4 py-2 rounded-full shadow-sm transition-all whitespace-nowrap text-base ${selectedCategory === category._id
                             ? 'bg-[#005E7B] text-white'
                             : 'bg-white border border-gray-200 hover:border-[#005E7B] hover:bg-[#005E7B]/5'
                             }`}
@@ -236,9 +274,7 @@ function AppContent() {
                     <div className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-gray-100 rounded-full"></div>
                     <div className="absolute top-0 left-0 w-10 h-10 sm:w-12 sm:h-12 border-2 border-[#005E7B] rounded-full border-t-transparent animate-spin"></div>
                   </div>
-                  <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 font-sans">
-                    Loading...
-                  </p>
+                  <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 font-sans">Loading...</p>
                 </div>
               )}
 
@@ -290,75 +326,12 @@ function AppContent() {
                         )}
                       </div>
 
-                      {/* Product Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                         {displayedProducts.map((product, index) => (
-                          <div
-                            key={product._id}
-                            onClick={() => navigate(`/product/${product.slug}`)}
-                            className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full scroll-animate delay-${(index % 8) + 1}`}
-                            style={{ animationDelay: `${index * 0.1}s` }} // Alternative inline style
-                          >
-
-                            {/* Product Image */}
-                            <div className="relative pb-[100%] bg-gray-100 overflow-hidden">
-                              <img
-                                src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_300/') || 'https://via.placeholder.com/300x300'}
-                                alt={product.nameEn}
-                                className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                              {product.onSale && (
-                                <span className={`absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium rounded-full shadow-sm z-10 ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
-                                  {language === 'km' ? 'បញ្ចុះតម្លៃ' : 'Sale'}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Product Info */}
-                            <div className="p-2 sm:p-3 flex flex-col flex-grow">
-                              <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base sm:text-sm md:text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
-                                {language === 'km' ? product.nameKm : product.nameEn}
-                              </h3>
-                              {/* Add description here */}
-                              {product.description && (
-                                <p className="text-xs text-gray-500 mb-2 line-clamp-2 font-sans">
-                                  {product.description}
-                                </p>
-                              )}
-                              <div className="flex items-center justify-between mt-auto">
-                                <div>
-                                  {product.salePrice ? (
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-sans text-sm font-bold text-red-600">
-                                        ${product.salePrice}
-                                      </span>
-                                      <span className="font-sans text-xs text-gray-400 line-through">
-                                        ${product.price}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <span className="font-sans text-sm font-bold text-gray-800">
-                                      ${product.price}
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    addToCart(product, 1);
-                                  }}
-                                >
-                                  <ShoppingCart size={20} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                          <ProductCard key={product._id} product={product} index={index} />
                         ))}
                       </div>
 
-                      {/* Load More Button */}
                       {hasMore && (
                         <div className="text-center mt-4 sm:mt-6 md:mt-8">
                           <button
@@ -376,6 +349,12 @@ function AppContent() {
             </>
           } />
 
+          {/* User Routes */}
+          <Route path="/user-login" element={<UserLogin />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+
           {/* Other Routes */}
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/sale" element={<Sale />} />
@@ -387,36 +366,13 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
 
           {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/categories" element={
-            <ProtectedRoute>
-              <Categories />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/orders" element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/add-product" element={
-            <ProtectedRoute>
-              <AddProduct />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/products" element={
-            <ProtectedRoute>
-              <ProductList />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/edit-product/:id" element={
-            <ProtectedRoute>
-              <EditProduct />
-            </ProtectedRoute>
-          } />
+          <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/admin/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+          <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="/admin/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+          <Route path="/admin/products" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
+          <Route path="/admin/edit-product/:id" element={<ProtectedRoute><EditProduct /></ProtectedRoute>} />
+          <Route path="/admin/coupons" element={<ProtectedRoute><CouponManagement /></ProtectedRoute>} />
         </Routes>
       </main>
 
@@ -433,13 +389,76 @@ function AppContent() {
         </button>
       )}
 
-      {/* Footer - stays at bottom on short pages */}
+      {/* Redesigned Footer */}
       {!hideHeader && (
-        <footer className="bg-white border-t py-3">
-          <div className="container mx-auto px-4 text-center">
-            <p className="font-khmer text-xs sm:text-sm text-gray-500">
-              © 2026 Sabay Tenh. All rights reserved.
-            </p>
+        <footer className="bg-gray-900 text-white py-8 mt-8">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
+              {/* About */}
+              <div>
+                <h3 className="font-khmer text-lg font-bold mb-2">Sabay Tenh</h3>
+                <p className={`text-gray-400 text-sm ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                  {language === 'km'
+                    ? 'ហាងលក់ទំនិញអនឡាញ ជាមួយផលិតផលគុណភាពល្អ និងតម្លៃសមរម្យ'
+                    : 'Your trusted online store with quality products at great prices'}
+                </p>
+              </div>
+
+              {/* Quick Links */}
+              <div>
+                <h3 className={`text-sm font-bold mb-2 uppercase tracking-wider ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                  {language === 'km' ? 'តំណភ្ជាប់រហ័ស' : 'Quick Links'}
+                </h3>
+                <div className="space-y-1">
+                  <button onClick={() => navigate('/')} className={`block text-gray-400 hover:text-white text-sm transition-colors ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                    {language === 'km' ? 'ទំព័រដើម' : 'Home'}
+                  </button>
+                  <button onClick={() => navigate('/sale')} className={`block text-gray-400 hover:text-white text-sm transition-colors ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                    {language === 'km' ? 'បញ្ចុះតម្លៃ' : 'Sale'}
+                  </button>
+                  <button onClick={() => navigate('/contact')} className={`block text-gray-400 hover:text-white text-sm transition-colors ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                    {language === 'km' ? 'ទំនាក់ទំនង' : 'Contact'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Contact & Social */}
+              <div>
+                <h3 className={`text-sm font-bold mb-2 uppercase tracking-wider ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                  {language === 'km' ? 'ទំនាក់ទំនង' : 'Contact Us'}
+                </h3>
+                <div className="space-y-1 text-gray-400 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} />
+                    <span className="font-sans">012 345 678</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail size={14} />
+                    <span className="font-sans">info@sabaytenh.com</span>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-3">
+                  <a href="#" className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+                    <Facebook size={16} />
+                  </a>
+                  <a href="#" className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+                    <MessageCircle size={16} />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Methods & Copyright */}
+            <div className="border-t border-gray-800 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <p className="font-khmer text-xs text-gray-500">
+                © 2026 Sabay Tenh. All rights reserved.
+              </p>
+              <div className="flex items-center gap-2 text-xs text-gray-500 font-sans">
+                <span>Payment:</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded text-white text-[10px]">ABA</span>
+                <span className="px-2 py-0.5 bg-white/10 rounded text-white text-[10px]">KHQR</span>
+              </div>
+            </div>
           </div>
         </footer>
       )}
@@ -450,6 +469,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AppContent />
     </Router>
   );

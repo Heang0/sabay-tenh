@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { ShoppingCart, Percent } from 'lucide-react';
 import { fetchProducts } from '../services/api';
+import ProductCard from '../components/ProductCard';
 
 const Sale = () => {
     const navigate = useNavigate();
-    const { addToCart } = useCart();
     const { language } = useLanguage();
 
     const [products, setProducts] = useState([]);
@@ -38,126 +37,77 @@ const Sale = () => {
         setVisibleCount(prev => prev + productsPerPage);
     };
 
-    const getDiscountPercentage = (price, salePrice) => {
-        if (!salePrice) return 0;
-        return Math.round(((price - salePrice) / price) * 100);
-    };
-
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <div className="relative">
                     <div className="w-12 h-12 border-2 border-gray-100 rounded-full"></div>
                     <div className="absolute top-0 left-0 w-12 h-12 border-2 border-[#005E7B] rounded-full border-t-transparent animate-spin"></div>
                 </div>
-                <p className="mt-4 text-sm text-gray-500 font-sans">
-                    Loading...
+                <p className={`text-sm text-gray-400 font-medium ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                    {language === 'km' ? 'កំពុងផ្ទុក...' : 'Loading sale items...'}
                 </p>
             </div>
         );
     }
 
     return (
-        <>
-            {/* Header - exactly like home page */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <Percent size={18} className="text-red-500" />
-                    <h2 className="text-lg font-semibold font-khmer text-gray-800">
-                        {language === 'km' ? 'ទំនិញបញ្ចុះតម្លៃ' : 'Sale Items'}
-                    </h2>
+        <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 shadow-sm">
+                        <Percent size={24} />
+                    </div>
+                    <div>
+                        <h2 className={`text-2xl font-bold text-gray-900 ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                            {language === 'km' ? 'ទំនិញបញ្ចុះតម្លៃ' : 'Flash Sale'}
+                        </h2>
+                        <p className={`text-sm text-gray-400 font-medium ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
+                            {products.length} {language === 'km' ? 'មុខទំនិញ' : 'items discounted'}
+                        </p>
+                    </div>
                 </div>
-                <span className="text-xs text-gray-400 font-sans">{products.length} items</span>
             </div>
 
             {products.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-                    <ShoppingCart size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-sans text-sm">
+                <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-gray-50 px-6">
+                    <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <ShoppingCart size={48} className="text-gray-200" />
+                    </div>
+                    <p className={`text-gray-500 text-lg font-medium mb-8 ${language === 'km' ? 'font-khmer' : 'font-sans'}`}>
                         {language === 'km' ? 'មិនទាន់មានទំនិញបញ្ចុះតម្លៃទេ' : 'No sale items yet'}
                     </p>
                     <button
                         onClick={() => navigate('/')}
-                        className="mt-4 px-4 py-2 bg-[#005E7B] text-white rounded-lg hover:bg-[#004b63] transition-colors font-sans text-xs"
+                        className="px-8 py-3 bg-[#005E7B] text-white rounded-2xl hover:bg-[#004b63] transition-all font-bold shadow-lg shadow-blue-100 hover:shadow-blue-200"
                     >
                         {language === 'km' ? 'ត្រឡប់ទៅទំព័រដើម' : 'Back to Home'}
                     </button>
                 </div>
             ) : (
                 <>
-                    {/* Product Grid - EXACT same as home page */}
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {displayedProducts.map((product, index) => {
-                            const discount = getDiscountPercentage(product.price, product.salePrice);
-
-                            return (
-                                <div
-                                    key={product._id}
-                                    onClick={() => navigate(`/product/${product.slug}`)}
-                                    className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full animate-fadeInUp"
-                                    style={{ animationDelay: `${index * 0.1}s` }}
-                                >
-                                    {/* Product Image */}
-                                    <div className="relative pb-[100%] bg-gray-200 overflow-hidden flex-shrink-0">
-                                        <img
-                                            src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
-                                            alt={product.nameEn}
-                                            className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                            loading="lazy"
-                                        />
-                                        {/* Sale Badge - percentage */}
-                                        <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-full shadow-sm z-10">
-                                            -{discount}%
-                                        </span>
-                                    </div>
-
-                                    {/* Product Info - EXACT same as home page */}
-                                    <div className="p-3 flex flex-col flex-grow">
-                                        {/* Product Name - Only ONE language */}
-                                        <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
-                                            {language === 'km' ? product.nameKm : product.nameEn}
-                                        </h3>
-
-                                        {/* Price and Cart - pushed to bottom */}
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-sans text-sm font-bold text-red-600">
-                                                    ${product.salePrice}
-                                                </span>
-                                                <span className="font-sans text-xs text-gray-400 line-through">
-                                                    ${product.price}
-                                                </span>
-                                            </div>
-                                            <button
-                                                className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    addToCart(product, 1);
-                                                }}
-                                            >
-                                                <ShoppingCart size={20} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    {/* Product Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                        {displayedProducts.map((product, index) => (
+                            <ProductCard key={product._id} product={product} index={index} />
+                        ))}
                     </div>
 
                     {/* Load More Button */}
                     {hasMore && (
-                        <div className="text-center mt-6 sm:mt-8 md:mt-10">
+                        <div className="text-center mt-12">
                             <button
                                 onClick={loadMore}
-                                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-sans text-sm sm:text-base"
+                                className="inline-flex items-center justify-center px-10 py-3.5 bg-white border border-gray-200 text-gray-800 rounded-2xl hover:bg-gray-50 transition-all font-bold text-sm shadow-sm hover:shadow-md"
                             >
-                                {language === 'km' ? 'ផ្ទុកបន្ថែម' : 'Load More'} ({displayedProducts.length} / {products.length})
+                                {language === 'km' ? 'បង្ហាញបន្ថែម' : 'Load More Products'}
                             </button>
                         </div>
                     )}
                 </>
             )}
-        </>
+        </div>
     );
 };
 

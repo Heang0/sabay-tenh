@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSearch } from '../context/SearchContext';
+import { useUser } from '../context/UserContext';
+import { useWishlist } from '../context/WishlistContext';
 import { translations } from '../context/translations';
-import { ShoppingCart, Search, Menu, X } from 'lucide-react';
-import logo from '../assets/logo.png';
+import { ShoppingCart, Search, Menu, X, Heart, User } from 'lucide-react';
+import logo from '../assets/logo.jpg';
 
 // Flag images from flagcdn.com
 const FLAGS = {
@@ -22,6 +24,8 @@ const Header = () => {
     const { getItemCount, toggleCart } = useCart();
     const { language, toggleLanguage } = useLanguage();
     const { setSearchQuery } = useSearch();
+    const { isLoggedIn, user } = useUser();
+    const { wishlistCount } = useWishlist();
     const t = translations[language];
 
     const handleSearchChange = (e) => {
@@ -122,6 +126,31 @@ const Header = () => {
                                 alt={language === 'km' ? 'English' : 'Khmer'}
                                 className="w-full h-full object-cover"
                             />
+                        </button>
+
+                        {/* User Account */}
+                        <button
+                            onClick={() => navigate(isLoggedIn ? '/profile' : '/user-login')}
+                            className="relative p-2 text-gray-600 hover:text-[#005E7B] transition-colors"
+                            title={isLoggedIn ? user?.fullName : (language === 'km' ? 'ចូលគណនី' : 'Sign In')}
+                        >
+                            <User size={20} />
+                            {isLoggedIn && (
+                                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                            )}
+                        </button>
+
+                        {/* Wishlist */}
+                        <button
+                            onClick={() => navigate(isLoggedIn ? '/wishlist' : '/user-login')}
+                            className="relative p-2 text-gray-600 hover:text-[#005E7B] transition-colors"
+                        >
+                            <Heart size={20} />
+                            {wishlistCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center font-sans">
+                                    {wishlistCount}
+                                </span>
+                            )}
                         </button>
 
                         {/* Cart */}

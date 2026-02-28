@@ -60,6 +60,23 @@ router.get('/slug/:slug', async (req, res) => {
     }
 });
 
+// GET featured products (for homepage sections)
+router.get('/featured/home', async (req, res) => {
+    try {
+        const newArrivals = await Product.find()
+            .sort({ createdAt: -1 })
+            .limit(8);
+
+        const onSale = await Product.find({ onSale: true })
+            .sort({ createdAt: -1 })
+            .limit(8);
+
+        res.json({ newArrivals, onSale });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // ========== ADMIN ROUTES ==========
 
 // CREATE product
