@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
+import { fetchUserOrders } from '../services/api';
 import {
     Mail, LogOut, Package, Clock, ChevronRight,
     ArrowLeft, ShoppingBag, User, CheckCircle, Heart
@@ -50,13 +51,8 @@ const Profile = () => {
         try {
             setLoadingOrders(true);
             const token = await getToken();
-            const res = await fetch(`${API_URL}/users/orders`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setOrders(data.orders || []);
-            }
+            const data = await fetchUserOrders(token);
+            setOrders(data.orders || []);
         } catch (e) {
             console.error('Orders error:', e);
         } finally {

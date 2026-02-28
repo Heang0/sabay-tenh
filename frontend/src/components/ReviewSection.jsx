@@ -6,7 +6,7 @@ import { fetchProductReviews, submitReview, deleteReview } from '../services/api
 import { Star, Trash2, User } from 'lucide-react';
 
 const ReviewSection = ({ productId }) => {
-    const { user, isLoggedIn } = useUser();
+    const { user, isLoggedIn, getToken } = useUser();
     const { language } = useLanguage();
     const navigate = useNavigate();
     const [reviews, setReviews] = useState([]);
@@ -45,12 +45,13 @@ const ReviewSection = ({ productId }) => {
 
         try {
             setSubmitting(true);
+            const token = await getToken();
             await submitReview({
                 productId,
                 rating,
                 comment,
-                userName: user.fullName
-            });
+                userName: user.fullName || user.displayName
+            }, token);
             setComment('');
             setRating(5);
             loadReviews();
@@ -63,7 +64,8 @@ const ReviewSection = ({ productId }) => {
 
     const handleDeleteReview = async (reviewId) => {
         try {
-            await deleteReview(reviewId);
+            const token = await getToken();
+            await deleteReview(reviewId, token);
             loadReviews();
         } catch (error) {
             console.error('Error deleting review:', error);
@@ -86,8 +88,8 @@ const ReviewSection = ({ productId }) => {
                         <Star
                             size={size}
                             className={`${star <= (interactive ? (hoveredStar || rating) : count)
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-gray-300'
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300'
                                 } transition-colors`}
                         />
                     </button>

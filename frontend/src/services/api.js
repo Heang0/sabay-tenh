@@ -221,8 +221,7 @@ export const fetchProductReviews = async (productId) => {
   }
 };
 
-export const submitReview = async (reviewData) => {
-  const token = localStorage.getItem('userToken');
+export const submitReview = async (reviewData, token) => {
   try {
     const response = await fetch(`${API_URL}/reviews`, {
       method: 'POST',
@@ -240,8 +239,7 @@ export const submitReview = async (reviewData) => {
   }
 };
 
-export const deleteReview = async (id) => {
-  const token = localStorage.getItem('userToken');
+export const deleteReview = async (id, token) => {
   try {
     const response = await fetch(`${API_URL}/reviews/${id}`, {
       method: 'DELETE',
@@ -342,8 +340,7 @@ export const deleteCoupon = async (id) => {
 
 // ========== USER ORDER HISTORY ==========
 
-export const fetchUserOrders = async () => {
-  const token = localStorage.getItem('userToken');
+export const fetchUserOrders = async (token) => {
   try {
     const response = await fetch(`${API_URL}/users/orders`, {
       headers: { 'Authorization': `Bearer ${token}` }
