@@ -3,12 +3,24 @@ const path = require('path');
 const User = require('../models/User');
 
 // Initialize Firebase Admin SDK
-const serviceAccount = require(path.join(__dirname, '..', 'serviceAccountKey.json'));
+let serviceAccount;
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
+try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        // Parse the JSON string from environment variable (for Render/Production)
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+        // Fallback to local file (for Development)
+        serviceAccount = require(path.join(__dirname, '..', 'serviceAccountKey.json'));
+    }
+
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    }
+} catch (error) {
+    console.error('Firebase Admin initialization error:', error.message);
 }
 
 // Middleware to verify Firebase ID token and attach MongoDB user
