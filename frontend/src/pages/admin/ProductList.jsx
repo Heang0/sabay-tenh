@@ -50,7 +50,6 @@ const ProductList = () => {
 
                 // Then load categories separately
                 const categoriesData = await fetchCategories();
-                console.log('✅ Categories set in state:', categoriesData); // Debug
 
                 setError(null);
             } catch (err) {

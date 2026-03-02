@@ -11,7 +11,6 @@ const PaymentSuccess = () => {
         const status = params.get('status');
         const tranId = params.get('tran_id');
 
-        console.log('Payment callback:', { status, tranId });
 
         // Redirect to order success after 3 seconds
         const timer = setTimeout(() => {

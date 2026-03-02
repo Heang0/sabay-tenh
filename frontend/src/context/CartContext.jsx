@@ -19,17 +19,14 @@ export const CartProvider = ({ children }) => {
     // Load cart from localStorage
     useEffect(() => {
         const savedCart = localStorage.getItem('cart');
-        console.log('🔄 Loading cart from localStorage:', savedCart);
         if (savedCart) {
             try {
                 const parsedCart = JSON.parse(savedCart);
-                console.log('✅ Cart loaded:', parsedCart);
                 setCart(parsedCart);
             } catch (error) {
                 console.error('❌ Error parsing cart:', error);
             }
         } else {
-            console.log('📭 No cart found in localStorage');
         }
         setIsLoaded(true);
     }, []);
@@ -37,7 +34,6 @@ export const CartProvider = ({ children }) => {
     // Save cart to localStorage whenever it changes
     useEffect(() => {
         if (isLoaded) {
-            console.log('💾 Saving cart to localStorage:', cart);
             localStorage.setItem('cart', JSON.stringify(cart));
         }
     }, [cart, isLoaded]);
@@ -54,12 +50,10 @@ export const CartProvider = ({ children }) => {
 
     // Add to cart
     const addToCart = (product, quantity = 1) => {
-        console.log('➕ Adding to cart:', product.nameEn, 'quantity:', quantity);
         setCart(prevCart => {
             const existingItem = prevCart.find(item => item._id === product._id);
 
             if (existingItem) {
-                console.log('🔄 Updating existing item');
                 // Show notification for update
                 setNotification({
                     product,
@@ -72,7 +66,6 @@ export const CartProvider = ({ children }) => {
                         : item
                 );
             } else {
-                console.log('🆕 Adding new item');
                 // Show notification for new item
                 setNotification({
                     product,
@@ -85,12 +78,10 @@ export const CartProvider = ({ children }) => {
     };
 
     const removeFromCart = (productId) => {
-        console.log('❌ Removing from cart:', productId);
         setCart(prevCart => prevCart.filter(item => item._id !== productId));
     };
 
     const updateQuantity = (productId, newQuantity) => {
-        console.log('🔄 Updating quantity:', productId, 'to', newQuantity);
         if (newQuantity < 1) {
             removeFromCart(productId);
             return;
@@ -104,7 +95,6 @@ export const CartProvider = ({ children }) => {
     };
 
     const clearCart = () => {
-        console.log('🗑️ Clearing cart');
         setCart([]);
     };
 

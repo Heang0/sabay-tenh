@@ -36,13 +36,14 @@ const ProductCard = ({ product, index = 0 }) => {
     };
 
     const isFirstRow = index < 12;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: isFirstRow ? 15 : 0 }}
+            initial={isMobile ? { opacity: 0 } : { opacity: 0, y: isFirstRow ? 15 : 0 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
-            whileHover={{ y: -4 }}
+            whileHover={isMobile ? {} : { y: -4 }}
             transition={{
                 duration: 0.4,
                 delay: isFirstRow ? (index % 4) * 0.05 : 0,
@@ -74,8 +75,8 @@ const ProductCard = ({ product, index = 0 }) => {
                 <button
                     onClick={handleWishlistClick}
                     className={`absolute top-2 left-2 z-30 p-1.5 rounded-full transition-all duration-300 shadow-sm ${isInWishlist(product._id)
-                            ? 'bg-red-50 text-red-500 scale-110'
-                            : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-400 hover:scale-110'
+                        ? 'bg-red-50 text-red-500 scale-110'
+                        : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-400 hover:scale-110'
                         }`}
                 >
                     <Heart size={16} fill={isInWishlist(product._id) ? "currentColor" : "none"} />

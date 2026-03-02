@@ -59,7 +59,6 @@ const MultiImageUpload = ({ images = [], onUpload, onRemove }) => {
         try {
             // Step 1: Resize BEFORE upload to save storage space
             const file = await resizeImage(originalFile);
-            console.log(`Gallery: Original ${Math.round(originalFile.size / 1024)}KB -> Resized ${Math.round(file.size / 1024)}KB`);
 
             const formData = new FormData();
             formData.append('file', file);

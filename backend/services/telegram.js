@@ -41,7 +41,6 @@ https://link.payway.com.kh/ABAPAYdj419233l?amount=${order.total}&orderId=${order
         // Send to Telegram group
         await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
-        console.log(`✅ Telegram notification sent for order ${order.orderNumber}`);
     } catch (error) {
         console.error('❌ Telegram notification error:', error);
     }

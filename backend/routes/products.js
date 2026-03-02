@@ -82,7 +82,6 @@ router.get('/featured/home', async (req, res) => {
 // CREATE product
 router.post('/', authMiddleware, async (req, res) => {
     try {
-        console.log('Creating product with data:', req.body);
 
         // Validate required fields
         const { nameKm, nameEn, price, image, category } = req.body;
@@ -122,12 +121,10 @@ router.post('/', authMiddleware, async (req, res) => {
             inStock: req.body.inStock !== undefined ? req.body.inStock : true
         };
 
-        console.log('Saving product with slug:', slug);
 
         const product = new Product(productData);
         const newProduct = await product.save();
 
-        console.log('✅ Product created:', newProduct.nameEn, 'with slug:', newProduct.slug);
         res.status(201).json(newProduct);
     } catch (error) {
         console.error('Error creating product:', error);
@@ -166,7 +163,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
         }
 
         const updatedProduct = await product.save();
-        console.log('✅ Product updated:', updatedProduct.nameEn, 'with slug:', updatedProduct.slug);
         res.json(updatedProduct);
     } catch (error) {
         console.error('Error updating product:', error);
@@ -183,7 +179,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         }
 
         await product.deleteOne();
-        console.log('🗑️ Product deleted:', product.nameEn);
         res.json({ message: 'Product deleted successfully' });
     } catch (error) {
         console.error('Error deleting product:', error);

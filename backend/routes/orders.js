@@ -23,8 +23,6 @@ const generateOrderNumber = () => {
 // CREATE order (public - checkout)
 router.post('/', async (req, res) => {
     try {
-        console.log('📦 Creating new order...');
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
 
         // Validate required fields
         if (!req.body.customer || !req.body.customer.fullName || !req.body.customer.phone || !req.body.customer.address) {
@@ -43,7 +41,6 @@ router.post('/', async (req, res) => {
 
         // Generate order number
         const orderNumber = generateOrderNumber();
-        console.log('Generated order number:', orderNumber);
 
         // Try to extract userId from Firebase token if user is logged in
         let userId = null;
@@ -101,13 +98,12 @@ router.post('/', async (req, res) => {
         const order = new Order(orderData);
         const savedOrder = await order.save();
 
-        console.log('✅ Order saved to database:', savedOrder.orderNumber);
 
         // Fire and forget email with better error logging
         if (savedOrder.customer.email) {
             sendOrderReceipt(savedOrder)
                 .then(result => {
-                    if (result) console.log('📧 Email sent successfully');
+                    if (result) { }
                 })
                 .catch(err => {
                     console.error('❌ Email failed:', err.message);
@@ -265,11 +261,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
         }
 
         const updatedOrder = await order.save();
-
-        console.log(`✅ Order ${order.orderNumber} updated:`, {
-            orderStatus: updatedOrder.orderStatus,
-            paymentStatus: updatedOrder.paymentStatus
-        });
 
         res.json({
             success: true,

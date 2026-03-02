@@ -20,7 +20,6 @@ router.post('/google-auth', userAuth, async (req, res) => {
                 photoURL: picture || req.body.photoURL || ''
             });
             await user.save();
-            console.log('✅ New user created:', email);
         } else {
             // Update profile info from Google (in case they changed name/photo)
             if (name && name !== user.displayName) user.displayName = name;

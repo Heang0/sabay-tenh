@@ -81,10 +81,7 @@ const AddProduct = () => {
                 inStock: formData.inStock
             };
 
-            console.log('Sending product data:', productData); // Debug log
-
             const result = await createProduct(productData);
-            console.log('Product created:', result); // Debug log
 
             setMessage({ type: 'success', text: 'Product added successfully!' });
 

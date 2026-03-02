@@ -13,7 +13,6 @@ class BakongService {
     // Generate KHQR code using official Bakong API
     async generateKHQR(order) {
         try {
-            console.log('🔄 Generating KHQR for order:', order.orderNumber);
 
             const amountInUSD = order.total;
             const amountInKHR = Math.round(amountInUSD * 4100); // Convert to KHR
@@ -30,7 +29,6 @@ class BakongService {
                 merchantCity: 'Phnom Penh'
             };
 
-            console.log('KHQR Payload:', payload);
 
             const response = await axios.post(
                 `${this.baseUrl}/khrq/generate`,
@@ -43,7 +41,6 @@ class BakongService {
                 }
             );
 
-            console.log('KHQR Response:', response.data);
 
             if (response.data && response.data.qrImage) {
                 return {
@@ -66,7 +63,6 @@ class BakongService {
     // Check payment status using MD5
     async checkPaymentStatus(md5) {
         try {
-            console.log('🔍 Checking payment for MD5:', md5);
 
             const response = await axios.post(
                 `${this.baseUrl}/check_transaction_by_md5`,
@@ -79,7 +75,6 @@ class BakongService {
                 }
             );
 
-            console.log('Payment check response:', response.data);
 
             // Response code 0 means payment found
             if (response.data && response.data.responseCode === 0) {

@@ -181,7 +181,6 @@ const generateReceiptHTML = (order) => {
 const sendOrderReceipt = async (order) => {
     try {
         if (!order.customer.email) {
-            console.log('No email provided, skipping receipt');
             return;
         }
 
@@ -193,7 +192,6 @@ const sendOrderReceipt = async (order) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`📧 Professional receipt sent to ${order.customer.email}:`, info.messageId);
         return info;
     } catch (error) {
         console.error('❌ Error sending email:', error);

@@ -164,7 +164,7 @@ function AppContent() {
           </button>
         )}
       </div>
-      <div className="overflow-x-auto scrollbar-hide pb-2 -mx-4 sm:-mx-6 px-4 sm:px-6">
+      <div className="overflow-x-auto scrollbar-hide pb-2">
         <div className="flex gap-4 min-w-max">
           {sectionProducts.map((product, index) => (
             <div key={product._id} className="w-40 sm:w-48 flex-shrink-0">
@@ -197,19 +197,23 @@ function AppContent() {
 
               {/* New Arrivals Section */}
               {newArrivals.length > 0 && (
-                <ProductScrollSection
-                  title={language === 'km' ? ' ផលិតផលថ្មី' : ' New Arrivals'}
-                  products={newArrivals}
-                />
+                <div className="mb-12">
+                  <ProductScrollSection
+                    title={language === 'km' ? ' ផលិតផលថ្មី' : ' New Arrivals'}
+                    products={newArrivals}
+                  />
+                </div>
               )}
 
               {/* On Sale Section */}
               {onSaleProducts.length > 0 && (
-                <ProductScrollSection
-                  title={language === 'km' ? ' កំពុងបញ្ចុះតម្លៃ' : ' On Sale'}
-                  products={onSaleProducts}
-                  viewAllLink="/sale"
-                />
+                <div className="mb-12">
+                  <ProductScrollSection
+                    title={language === 'km' ? ' កំពុងបញ្ចុះតម្លៃ' : ' On Sale'}
+                    products={onSaleProducts}
+                    viewAllLink="/sale"
+                  />
+                </div>
               )}
 
               {/* Search Results Indicator */}

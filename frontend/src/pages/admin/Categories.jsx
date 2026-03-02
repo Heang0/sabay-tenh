@@ -18,10 +18,6 @@ const Categories = () => {
     // Fetch categories
     const fetchCategories = async () => {
         try {
-            console.log('Fetching from:', `${API_URL}/categories`); // Debug
-            const response = await fetch(`${API_URL}/categories`);
-            const data = await response.json();
-            console.log('Categories fetched:', data); // Debug
             setCategories(data);
         } catch (error) {
             console.error('Error fetching categories:', error);

@@ -52,10 +52,8 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
         setError('');
 
         try {
-            console.log('Optimizing image for storage...');
             // Step 1: Resize BEFORE upload to save storage space
             const file = await resizeImage(originalFile);
-            console.log(`Main Image: Original ${Math.round(originalFile.size / 1024)}KB -> Resized ${Math.round(file.size / 1024)}KB`);
 
             const formData = new FormData();
             formData.append('file', file);
