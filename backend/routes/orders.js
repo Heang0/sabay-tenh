@@ -9,6 +9,11 @@ const { sendOrderReceipt } = require('../services/emailService');
 const { sendOrderNotification } = require('../services/telegram');
 const bakongService = require('../services/bakong');
 
+// Reduce upstream pressure to Bakong API (helps avoid CloudFront/WAF rate blocks).
+const paymentCheckCache = new Map();
+const PAYMENT_CHECK_MIN_INTERVAL_MS = 10000;
+const PAYMENT_CHECK_TRANSIENT_MS = 30000;
+
 // Helper function to generate order number
 const generateOrderNumber = () => {
     const date = new Date();
@@ -258,8 +263,16 @@ router.get('/:id/check-payment', async (req, res) => {
             return res.json({ status: 'paid' });
         }
 
+        const cacheKey = String(order._id);
+        const nowMs = Date.now();
+        const cached = paymentCheckCache.get(cacheKey);
+        if (cached && nowMs < cached.nextCheckAt) {
+            return res.json(cached.response);
+        }
+
         const result = await bakongService.checkPaymentStatus(order.paymentMd5);
 
+        let nextCheckDelayMs = PAYMENT_CHECK_MIN_INTERVAL_MS;
         let statusResponse;
         if (result.success && result.status === 'PAID') {
             order.paymentStatus = 'paid';
@@ -268,17 +281,31 @@ router.get('/:id/check-payment', async (req, res) => {
             }
             await order.save();
             statusResponse = { status: 'paid' };
+            paymentCheckCache.delete(cacheKey);
+            return res.json(statusResponse);
         } else if (result.success && result.status === 'UNPAID') {
+            if (result.transient) {
+                nextCheckDelayMs = result.retryAfterMs || PAYMENT_CHECK_TRANSIENT_MS;
+            }
             statusResponse = {
                 status: 'pending',
+                retryAfterMs: nextCheckDelayMs,
                 ...(result.transient ? { message: result.error } : {})
             };
         } else {
+            nextCheckDelayMs = PAYMENT_CHECK_TRANSIENT_MS;
             statusResponse = {
                 status: 'error',
+                retryAfterMs: nextCheckDelayMs,
                 message: result.error || 'Payment check failed'
             };
         }
+
+        paymentCheckCache.set(cacheKey, {
+            checkedAt: nowMs,
+            nextCheckAt: nowMs + nextCheckDelayMs,
+            response: statusResponse
+        });
 
         res.json(statusResponse);
     } catch (error) {

@@ -13,6 +13,8 @@ const PaymentPage = () => {
     const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
     const [statusMessage, setStatusMessage] = useState('');
     const BAKONG_LOGO_URL = 'https://bakong.nbc.gov.kh/images/favicon.png';
+    const MIN_POLL_INTERVAL_MS = 6000;
+    const ERROR_POLL_INTERVAL_MS = 15000;
 
     const API_URL = import.meta.env.VITE_API_URL
         ? (import.meta.env.VITE_API_URL.endsWith('/')
@@ -49,15 +51,17 @@ const PaymentPage = () => {
         fetchOrder();
     }, [id, API_URL]);
 
-    // Check payment status every 2 seconds
+    // Check payment status with adaptive interval to avoid upstream rate blocking
     useEffect(() => {
         if (paymentStatus === 'paid' || paymentStatus === 'expired') {
             return;
         }
 
-        let intervalId;
+        let isCancelled = false;
+        let timeoutId;
 
         const checkPayment = async () => {
+            let nextDelayMs = MIN_POLL_INTERVAL_MS;
             try {
                 const response = await fetch(`${API_URL}/orders/${id}/check-payment`);
                 const data = await response.json();
@@ -66,36 +70,52 @@ const PaymentPage = () => {
                     setPaymentStatus('paid');
                     setStatusMessage('');
                     clearCart();
-                    clearInterval(intervalId);
+                    isCancelled = true;
                     setTimeout(() => navigate(`/order-success/${id}`), 2000);
                 } else if (data.status === 'pending') {
                     setPaymentStatus('pending');
                     setStatusMessage(data.message || '');
+                    nextDelayMs = Math.max(
+                        MIN_POLL_INTERVAL_MS,
+                        Number(data.retryAfterMs) || MIN_POLL_INTERVAL_MS
+                    );
                 } else if (data.status === 'error') {
                     console.error('Payment check error:', data.message);
                     setPaymentStatus('pending');
                     setStatusMessage(data.message || 'Payment verification is temporarily unavailable. Retrying...');
+                    nextDelayMs = Math.max(
+                        ERROR_POLL_INTERVAL_MS,
+                        Number(data.retryAfterMs) || ERROR_POLL_INTERVAL_MS
+                    );
                 } else if (data.status === 'expired') {
                     setPaymentStatus('expired');
                     setStatusMessage('');
-                    clearInterval(intervalId);
+                    isCancelled = true;
                     console.warn('QR code expired');
                 } else {
-                    // Unknown status â€” keep polling
+                    // Unknown status - keep polling with safe delay
                     setPaymentStatus('pending');
                     setStatusMessage('Waiting for payment confirmation...');
+                    nextDelayMs = ERROR_POLL_INTERVAL_MS;
                 }
             } catch (error) {
                 console.error('Error checking payment:', error);
                 setPaymentStatus('pending');
                 setStatusMessage('Cannot reach payment server. Retrying...');
+                nextDelayMs = ERROR_POLL_INTERVAL_MS;
+            }
+
+            if (!isCancelled) {
+                timeoutId = setTimeout(checkPayment, nextDelayMs);
             }
         };
 
         checkPayment();
-        intervalId = setInterval(checkPayment, 2000);
-        return () => clearInterval(intervalId);
-    }, [id, navigate, paymentStatus, API_URL]);
+        return () => {
+            isCancelled = true;
+            clearTimeout(timeoutId);
+        };
+    }, [id, navigate, paymentStatus, API_URL, clearCart]);
 
     // Countdown timer
     useEffect(() => {

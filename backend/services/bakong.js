@@ -1,13 +1,22 @@
 const axios = require('axios');
 const { BakongKHQR, IndividualInfo, khqrData } = require('bakong-khqr');
 
+const cleanEnvValue = (value) => {
+    if (typeof value !== 'string') return value;
+    return value.trim().replace(/^['"]|['"]$/g, '');
+};
+
 class BakongService {
     constructor() {
-        this.accountId = process.env.BAKONG_ACCOUNT_ID;
-        this.merchantName = process.env.BAKONG_MERCHANT_NAME;
-        this.merchantCity = process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh';
-        this.accessToken = process.env.BAKONG_TOKEN;
-        this.baseUrl = process.env.BAKONG_ENV === 'production'
+        const env = cleanEnvValue(process.env.BAKONG_ENV || 'sandbox');
+        const normalizedEnv = String(env).toLowerCase();
+        const isProduction = ['production', 'prod', 'live'].includes(normalizedEnv);
+
+        this.accountId = cleanEnvValue(process.env.BAKONG_ACCOUNT_ID);
+        this.merchantName = cleanEnvValue(process.env.BAKONG_MERCHANT_NAME);
+        this.merchantCity = cleanEnvValue(process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh');
+        this.accessToken = cleanEnvValue(process.env.BAKONG_TOKEN);
+        this.baseUrl = isProduction
             ? 'https://api-bakong.nbc.gov.kh/v1'
             : 'https://sit-api-bakong.nbc.gov.kh/v1';
         this.isMock = process.env.BAKONG_MOCK === 'true';
@@ -30,7 +39,9 @@ class BakongService {
 
         return {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.accessToken}`
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': `Bearer ${this.accessToken}`,
+            'User-Agent': 'my-ecommerce-site-bakong-check/1.0'
         };
     }
 
@@ -133,7 +144,8 @@ class BakongService {
                 `${this.baseUrl}/check_transaction_by_md5`,
                 { md5 },
                 {
-                    headers: this._getAuthHeaders()
+                    headers: this._getAuthHeaders(),
+                    timeout: 15000
                 }
             );
 
@@ -156,6 +168,13 @@ class BakongService {
             }
         } catch (error) {
             const httpStatus = error.response?.status;
+            const responseBody = error.response?.data;
+            const responseBodyText = typeof responseBody === 'string'
+                ? responseBody
+                : JSON.stringify(responseBody || {});
+            const looksLikeCloudFrontBlock =
+                httpStatus === 403 &&
+                /cloudfront|request blocked|could not be satisfied/i.test(responseBodyText);
             const isTemporary = [401, 403, 408, 429, 500, 502, 503, 504].includes(httpStatus);
             console.error('Payment check error:', error.response?.data || error.message);
 
@@ -164,7 +183,11 @@ class BakongService {
                     success: true,
                     status: 'UNPAID',
                     transient: true,
-                    error: `Bakong check temporarily unavailable (HTTP ${httpStatus})`
+                    blocked: looksLikeCloudFrontBlock,
+                    retryAfterMs: looksLikeCloudFrontBlock ? 45000 : 15000,
+                    error: looksLikeCloudFrontBlock
+                        ? 'Bakong verification is temporarily blocked by upstream network protection (HTTP 403).'
+                        : `Bakong check temporarily unavailable (HTTP ${httpStatus})`
                 };
             }
 
