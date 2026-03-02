@@ -75,6 +75,7 @@ const AddProduct = () => {
                 salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
                 onSale: formData.onSale || false,
                 image: formData.image,
+                images: formData.images || [], // FIX: Include the gallery images array
                 category: formData.category,
                 description: formData.description || '',
                 inStock: formData.inStock

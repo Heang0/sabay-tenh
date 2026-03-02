@@ -169,7 +169,7 @@ const ProductDetail = () => {
                         <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
                             <button
                                 onClick={() => setActiveImage(product.image)}
-                                className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === product.image ? 'border-[#005E7B] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                                className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${activeImage === product.image ? 'border-[#005E7B] scale-105 shadow-md z-10' : 'border-gray-100 opacity-70 hover:opacity-100 bg-gray-50'
                                     }`}
                             >
                                 <img src={getOptimizedUrl(product.image, 200)} className="w-full h-full object-cover" alt="Main" />
@@ -178,7 +178,7 @@ const ProductDetail = () => {
                                 <button
                                     key={idx}
                                     onClick={() => setActiveImage(img)}
-                                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-[#005E7B] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 ${activeImage === img ? 'border-[#005E7B] scale-105 shadow-md z-10' : 'border-gray-100 opacity-70 hover:opacity-100 bg-gray-50'
                                         }`}
                                 >
                                     <img src={getOptimizedUrl(img, 200)} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
