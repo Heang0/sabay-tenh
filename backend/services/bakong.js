@@ -156,7 +156,7 @@ class BakongService {
             }
         } catch (error) {
             const httpStatus = error.response?.status;
-            const isTemporary = [401, 408, 429, 500, 502, 503, 504].includes(httpStatus);
+            const isTemporary = [401, 403, 408, 429, 500, 502, 503, 504].includes(httpStatus);
             console.error('Payment check error:', error.response?.data || error.message);
 
             if (isTemporary) {
