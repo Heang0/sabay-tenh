@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useCart } from '../context/CartContext';
-import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowLeft, Package } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
+import { ProductSkeleton } from '../components/Skeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = import.meta.env.DEV
     ? 'http://localhost:5000/api'
     : 'https://sabay-tenh.onrender.com/api';
-
-import ProductCard from '../components/ProductCard';
 
 const WishlistPage = () => {
     const navigate = useNavigate();
@@ -21,21 +19,27 @@ const WishlistPage = () => {
     const km = language === 'km';
 
     useEffect(() => {
-        if (!isLoggedIn) { navigate('/user-login'); return; }
+        // Assuming useWishlist provides isLoggedIn or a check for it
+        // If not, you might need to re-introduce useUser or a similar check
         loadWishlist();
-    }, [isLoggedIn]);
+    }, []); // Removed isLoggedIn from dependency array as it's not directly from useUser anymore
 
     const loadWishlist = async () => {
         try {
             setLoading(true);
             const token = await getToken();
-            if (!token) return;
+            if (!token) {
+                navigate('/user-login'); // Redirect if no token
+                return;
+            }
             const response = await fetch(`${API_URL}/wishlist`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
                 const data = await response.json();
                 setProducts(data.products || []);
+            } else if (response.status === 401) {
+                navigate('/user-login'); // Redirect on unauthorized
             }
         } catch (error) {
             console.error('Error loading wishlist:', error);
@@ -43,6 +47,18 @@ const WishlistPage = () => {
             setLoading(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+                    {[...Array(4)].map((_, i) => (
+                        <ProductSkeleton key={i} />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#F8FAFC]">

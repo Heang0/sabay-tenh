@@ -62,14 +62,29 @@ const ProductDetail = () => {
     };
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-64">
-                <div className="relative">
-                    <div className="w-12 h-12 border-2 border-gray-100 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-12 h-12 border-2 border-[#005E7B] rounded-full border-t-transparent animate-spin"></div>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    {/* Image Skeleton */}
+                    <div className="w-full aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                        <div className="w-full h-full animate-pulse bg-gray-200"></div>
+                    </div>
+
+                    {/* Info Skeleton */}
+                    <div className="space-y-4">
+                        <div className="h-8 w-3/4 animate-pulse bg-gray-200 rounded"></div>
+                        <div className="h-6 w-1/4 animate-pulse bg-gray-200 rounded"></div>
+                        <div className="h-4 w-1/3 animate-pulse bg-gray-200 rounded"></div>
+                        <div className="flex gap-4 pt-4">
+                            <div className="h-12 flex-1 animate-pulse bg-gray-200 rounded-lg"></div>
+                            <div className="h-12 w-12 animate-pulse bg-gray-200 rounded-lg"></div>
+                        </div>
+                        <div className="space-y-2 pt-6">
+                            <div className="h-3 w-full animate-pulse bg-gray-200 rounded"></div>
+                            <div className="h-3 w-full animate-pulse bg-gray-200 rounded"></div>
+                            <div className="h-3 w-2/3 animate-pulse bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
                 </div>
-                <p className="mt-4 text-sm text-gray-500 font-sans">
-                    Loading...
-                </p>
             </div>
         );
     }
@@ -89,7 +104,11 @@ const ProductDetail = () => {
     }
 
     return (
-        <>
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+        >
             {/* Back Button */}
             {/* Back Button - Modern Icon Only */}
             <button
@@ -190,8 +209,8 @@ const ProductDetail = () => {
                                 toggleWishlist(product._id);
                             }}
                             className={`w-12 h-12 flex items-center justify-center border rounded-lg transition-colors ${isInWishlist(product._id)
-                                    ? 'border-red-200 bg-red-50 text-red-500'
-                                    : 'border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500'
+                                ? 'border-red-200 bg-red-50 text-red-500'
+                                : 'border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500'
                                 }`}
                         >
                             <Heart size={20} className={isInWishlist(product._id) ? 'fill-red-500' : ''} />
@@ -303,7 +322,7 @@ const ProductDetail = () => {
                     </div>
                 </div>
             )}
-        </>
+        </motion.div>
     );
 };
 

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { ShoppingCart, Percent, ArrowLeft, Zap } from 'lucide-react';
+import { Package, Percent, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { fetchProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import { ProductSkeleton } from '../components/Skeleton';
+import { motion } from 'framer-motion';
 
 const Sale = () => {
     const navigate = useNavigate();
@@ -40,14 +42,12 @@ const Sale = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <div className="relative">
-                    <div className="w-12 h-12 border-2 border-gray-100 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-12 h-12 border-2 border-[#005E7B] rounded-full border-t-transparent animate-spin"></div>
+            <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+                    {[...Array(8)].map((_, i) => (
+                        <ProductSkeleton key={i} />
+                    ))}
                 </div>
-                <p className={`text-sm text-gray-400 font-medium ${km ? 'font-khmer' : 'font-sans'}`}>
-                    {km ? 'កំពុងផ្ទុក...' : 'Loading sale items...'}
-                </p>
             </div>
         );
     }

@@ -32,6 +32,7 @@ import { ShoppingCart, Search, Heart, Star, Facebook, MessageCircle, Mail, Phone
 import { useCart } from './context/CartContext';
 import ScrollToTop from './components/ScrollToTop';
 import ProductCard from './components/ProductCard';
+import Skeleton, { ProductSkeleton, CategorySkeleton } from './components/Skeleton';
 
 function AppContent() {
   const [products, setProducts] = useState([]);
@@ -268,13 +269,21 @@ function AppContent() {
               )}
 
               {/* Loading State */}
-              {loading && (
-                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
-                  <div className="relative">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-gray-100 rounded-full"></div>
-                    <div className="absolute top-0 left-0 w-10 h-10 sm:w-12 sm:h-12 border-2 border-[#005E7B] rounded-full border-t-transparent animate-spin"></div>
+              {loading && products.length === 0 && (
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  {/* Category Skeletons */}
+                  <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide mb-6">
+                    {[...Array(6)].map((_, i) => (
+                      <CategorySkeleton key={i} />
+                    ))}
                   </div>
-                  <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 font-sans">Loading...</p>
+
+                  {/* Product Grid Skeletons */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
+                    {[...Array(8)].map((_, i) => (
+                      <ProductSkeleton key={i} />
+                    ))}
+                  </div>
                 </div>
               )}
 

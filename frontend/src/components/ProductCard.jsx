@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
+import { motion } from 'framer-motion';
 
-const ProductCard = ({ product, index }) => {
+const ProductCard = ({ product, index = 0 }) => {
     const navigate = useNavigate();
     const { language } = useLanguage();
     const { isInWishlist, toggleWishlist } = useWishlist();
@@ -35,71 +36,86 @@ const ProductCard = ({ product, index }) => {
     };
 
     return (
-        <div
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            whileHover={{ y: -5 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
             onClick={() => navigate(`/product/${product.slug}`)}
-            className="bg-white rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col h-full group"
-            style={{ animationDelay: `${index * 0.1}s` }}
+            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full group"
         >
-            <div className="relative pb-[100%] bg-gray-100 overflow-hidden">
+            {/* Product Image */}
+            <div className="relative pb-[100%] bg-gray-100 overflow-hidden flex-shrink-0">
                 <img
-                    src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_300/') || 'https://via.placeholder.com/300x300'}
-                    alt={km ? product.nameKm : product.nameEn}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
+                    alt={product.nameEn}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                 />
 
-                {/* Sale Badge */}
+                {/* Overlay on hover */}
+                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                 {product.onSale && (
-                    <span className={`absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full shadow-sm z-10 ${km ? 'font-khmer' : 'font-sans'}`}>
-                        {discount > 0 ? `-${discount}%` : (km ? 'បញ្ចុះតម្លៃ' : 'Sale')}
+                    <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded-full shadow-sm z-10 animate-pulse">
+                        -{discount}%
                     </span>
                 )}
 
-                {/* Wishlist Heart */}
+                {/* Quick Add Button - Floating */}
                 <button
-                    onClick={handleWishlistClick}
-                    className="absolute top-2 left-2 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center z-10 hover:bg-white transition-colors shadow-sm"
+                    className="absolute bottom-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full shadow-lg opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-[#005E7B] hover:text-white z-20"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product, 1);
+                    }}
                 >
-                    <Heart
-                        size={16}
-                        className={`transition-colors ${isInWishlist(product._id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`}
-                    />
+                    <ShoppingCart size={18} />
                 </button>
             </div>
 
+            {/* Product Info */}
             <div className="p-3 flex flex-col flex-grow">
-                <h3 className={`${km ? 'font-khmer' : 'font-sans'} text-[15px] sm:text-[16px] font-medium text-gray-800 mb-1.5 line-clamp-2 leading-snug group-hover:text-[#005E7B] transition-colors`}>
-                    {km ? product.nameKm : product.nameEn}
-                </h3>
-
-                {product.description && (
-                    <p className="text-[11px] text-gray-400 mb-2 line-clamp-1 font-sans">
-                        {product.description}
-                    </p>
-                )}
-
-                <div className="flex items-center justify-between mt-auto pt-2">
-                    <div className="flex flex-col">
-                        {product.salePrice ? (
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-1.5">
-                                <span className="font-sans text-base font-bold text-red-600">${product.salePrice}</span>
-                                <span className="font-sans text-[11px] text-gray-400 line-through decoration-gray-300">${product.price}</span>
-                            </div>
-                        ) : (
-                            <span className="font-sans text-base font-bold text-gray-800">${product.price}</span>
-                        )}
-                    </div>
-
+                <div className="flex justify-between items-start gap-2 mb-1">
+                    <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-[15px] font-medium text-gray-800 line-clamp-2 leading-tight group-hover:text-[#005E7B] transition-colors`}>
+                        {language === 'km' ? product.nameKm : product.nameEn}
+                    </h3>
                     <button
-                        className="w-9 h-9 flex items-center justify-center bg-[#005E7B] text-white rounded-lg hover:bg-[#004b63] hover:scale-105 active:scale-95 transition-all duration-200 shadow-sm"
-                        onClick={handleAddToCart}
-                        title={km ? 'ដាក់ក្នុងកន្ត្រក' : 'Add to cart'}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isLoggedIn) { navigate('/user-login'); return; }
+                            toggleWishlist(product._id);
+                        }}
+                        className={`transition-all duration-300 transform ${isInWishlist(product._id)
+                            ? 'text-red-500 scale-110'
+                            : 'text-gray-300 hover:text-red-400 hover:scale-110'
+                            }`}
                     >
-                        <ShoppingCart size={18} />
+                        <Heart size={18} fill={isInWishlist(product._id) ? "currentColor" : "none"} />
                     </button>
                 </div>
+
+                <div className="mt-auto flex items-center justify-between">
+                    <div className="flex flex-col">
+                        {product.salePrice ? (
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-sans text-[15px] font-bold text-red-600">
+                                    ${product.salePrice}
+                                </span>
+                                <span className="font-sans text-[11px] text-gray-400 line-through">
+                                    ${product.price}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="font-sans text-[15px] font-bold text-gray-800">
+                                ${product.price}
+                            </span>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

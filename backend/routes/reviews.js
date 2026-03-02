@@ -100,7 +100,7 @@ router.delete('/:id', userAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Review not found' });
         }
 
-        if (review.userId.toString() !== req.user.id) {
+        if (!req.user || review.userId.toString() !== req.user.id.toString()) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
