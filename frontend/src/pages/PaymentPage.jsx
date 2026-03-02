@@ -1,7 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Clock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import API_URL from '../services/api';
 
 const PaymentPage = () => {
     const { id } = useParams();
@@ -17,11 +18,6 @@ const PaymentPage = () => {
     const MIN_POLL_INTERVAL_MS = 6000;
     const ERROR_POLL_INTERVAL_MS = 15000;
 
-    const API_URL = import.meta.env.VITE_API_URL
-        ? (import.meta.env.VITE_API_URL.endsWith('/')
-            ? import.meta.env.VITE_API_URL.slice(0, -1)
-            : import.meta.env.VITE_API_URL)
-        : (import.meta.env.DEV ? 'http://localhost:5000/api' : `${window.location.origin}/api`);
 
     // Fetch order details
     useEffect(() => {
@@ -289,6 +285,7 @@ const PaymentPage = () => {
 };
 
 export default PaymentPage;
+
 
 
 

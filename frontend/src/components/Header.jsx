@@ -101,7 +101,7 @@ const Header = () => {
                                 value={localSearch}
                                 onChange={handleSearchChange}
                                 placeholder={t.search || 'Search products...'}
-                                className="w-64 lg:w-80 pl-10 pr-10 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#005E7B] focus:border-transparent font-sans"
+                                className="w-64 lg:w-80 pl-10 pr-10 py-2 border border-gray-200 rounded-full text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#005E7B] focus:border-transparent font-sans"
                             />
                             <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
                             {localSearch && (
@@ -185,7 +185,7 @@ const Header = () => {
                                 value={localSearch}
                                 onChange={handleSearchChange}
                                 placeholder={t.search || 'Search products...'}
-                                className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#005E7B] font-sans"
+                                className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#005E7B] font-sans"
                                 autoFocus
                             />
                             <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />

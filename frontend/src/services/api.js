@@ -1,5 +1,8 @@
-const VITE_API_URL = import.meta.env.VITE_API_URL;
-const API_URL = VITE_API_URL
+const VITE_API_URL = (import.meta.env.VITE_API_URL || '').trim();
+const isLocalhostUrl = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/i.test(VITE_API_URL);
+const shouldIgnoreConfiguredUrl = !import.meta.env.DEV && isLocalhostUrl;
+
+const API_URL = !shouldIgnoreConfiguredUrl && VITE_API_URL
   ? (VITE_API_URL.endsWith('/') ? VITE_API_URL.slice(0, -1) : VITE_API_URL)
   : (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://sabay-tenh.onrender.com/api');
 
