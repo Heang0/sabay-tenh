@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Heart, ShoppingBag, Trash2, ArrowLeft, Package } from 'lucide-react';
+import { Heart, ShoppingBag, Trash2, ArrowLeft, Package, ShoppingCart } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { ProductSkeleton } from '../components/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
