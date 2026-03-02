@@ -10,7 +10,8 @@ import {
     Settings,
     LogOut,
     Menu,
-    X
+    X,
+    Tag
 } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -44,6 +45,11 @@ const AdminLayout = ({ children }) => {
             path: '/admin/orders',
             name: 'Orders',
             icon: <ShoppingBag size={20} />,
+        },
+        {
+            path: '/admin/coupons',
+            name: 'Coupons',
+            icon: <Tag size={20} />,
         },
         {
             path: '/admin/settings',

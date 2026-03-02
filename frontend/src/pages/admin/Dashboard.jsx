@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchProducts } from '../../services/api';
-import { Package, ShoppingBag, DollarSign, TrendingUp, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
+import { Package, ShoppingBag, DollarSign, TrendingUp, ArrowUp, ArrowDown, PlusCircle, Tag } from 'lucide-react';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -149,7 +149,7 @@ const Dashboard = () => {
                         </h2>
                         <div className="space-y-3">
                             <a
-                                href="/admin/add-product"
+                                href="#/admin/add-product"
                                 className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors group"
                             >
                                 <div className="p-2 bg-blue-500 rounded-lg group-hover:scale-110 transition-transform">
@@ -161,7 +161,7 @@ const Dashboard = () => {
                                 </div>
                             </a>
                             <a
-                                href="/admin/products"
+                                href="#/admin/products"
                                 className="flex items-center gap-4 p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors group"
                             >
                                 <div className="p-2 bg-green-500 rounded-lg group-hover:scale-110 transition-transform">
@@ -173,7 +173,7 @@ const Dashboard = () => {
                                 </div>
                             </a>
                             <a
-                                href="/admin/orders"
+                                href="#/admin/orders"
                                 className="flex items-center gap-4 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors group"
                             >
                                 <div className="p-2 bg-purple-500 rounded-lg group-hover:scale-110 transition-transform">
@@ -182,6 +182,18 @@ const Dashboard = () => {
                                 <div>
                                     <p className="font-bold font-sans text-gray-800">View Orders</p>
                                     <p className="text-sm text-gray-500">Check and update order status</p>
+                                </div>
+                            </a>
+                            <a
+                                href="#/admin/coupons"
+                                className="flex items-center gap-4 p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors group"
+                            >
+                                <div className="p-2 bg-orange-500 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Tag size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <p className="font-bold font-sans text-gray-800">Manage Coupons</p>
+                                    <p className="text-sm text-gray-500">Create discount codes and offers</p>
                                 </div>
                             </a>
                         </div>

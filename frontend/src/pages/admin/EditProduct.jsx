@@ -50,7 +50,7 @@ const EditProduct = () => {
     useEffect(() => {
         const loadProduct = async () => {
             try {
-                setLoading(true);
+                setLoading(true);``
                 const data = await fetchProductById(id);
                 setFormData({
                     nameKm: data.nameKm || '',
