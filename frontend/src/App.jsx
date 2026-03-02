@@ -164,8 +164,8 @@ function AppContent() {
           </button>
         )}
       </div>
-      <div className="overflow-x-auto scrollbar-hide pb-2">
-        <div className="flex gap-3 min-w-max">
+      <div className="overflow-x-auto scrollbar-hide pb-2 -mx-4 sm:-mx-6 px-4 sm:px-6">
+        <div className="flex gap-4 min-w-max">
           {sectionProducts.map((product, index) => (
             <div key={product._id} className="w-40 sm:w-48 flex-shrink-0">
               <ProductCard product={product} index={index} />
@@ -177,16 +177,16 @@ function AppContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col overflow-x-hidden">
       {!hideHeader && <Header />}
       <CartSidebar />
 
-      <main className={`flex-1 container mx-auto px-2 sm:px-4 ${isAdminRoute ? 'pt-0 pb-8' :
+      <main className={`flex-1 container mx-auto px-4 sm:px-6 ${isAdminRoute ? 'pt-0 pb-8' :
         isProductRoute ? 'pt-2 pb-8' :
           isCheckoutRoute ? 'pt-0 pb-8' :
             isPaymentRoute ? 'pt-0 pb-8' :
               isOrderSuccessRoute ? 'pt-0 pb-8' :
-                isAuthRoute ? 'pt-0 pb-0' : 'pt-4 sm:pt-6 pb-8'
+                isAuthRoute ? 'pt-0 pb-0' : 'pt-4 sm:pt-6 pb-40'
         }`}>
         <Routes>
           {/* Home Route */}

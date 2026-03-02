@@ -42,7 +42,7 @@ const Sale = () => {
 
     if (loading) {
         return (
-            <div className="py-8">
+            <div className="py-8 pb-32">
                 <div className="grid grid-cols-2 gap-3 sm:gap-3 md:gap-4 md:grid-cols-3 lg:grid-cols-4">
                     {[...Array(8)].map((_, i) => (
                         <ProductSkeleton key={i} />
@@ -79,7 +79,7 @@ const Sale = () => {
                 </div>
             </div>
 
-            <div className="pt-6 pb-12">
+            <div className="pt-6 pb-40">
                 {/* ── Banner ── */}
                 <div className="relative mb-8 rounded-3xl overflow-hidden shadow-xl shadow-red-100">
                     <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-500 opacity-90"></div>

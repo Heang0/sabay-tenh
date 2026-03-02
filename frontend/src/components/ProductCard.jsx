@@ -65,45 +65,30 @@ const ProductCard = ({ product, index = 0 }) => {
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {product.onSale && (
-                    <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded-full shadow-sm z-10 animate-pulse">
+                    <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-[10px] font-bold rounded-full shadow-sm z-20 animate-pulse">
                         -{discount}%
                     </span>
                 )}
 
-                {/* Quick Add Button - Floating */}
+                {/* Wishlist Button - Top Left */}
                 <button
-                    className="absolute bottom-3 right-3 p-2.5 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full shadow-lg opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:bg-[#005E7B] hover:text-white z-20"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(product, 1);
-                    }}
+                    onClick={handleWishlistClick}
+                    className={`absolute top-2 left-2 z-30 p-1.5 rounded-full transition-all duration-300 shadow-sm ${isInWishlist(product._id)
+                            ? 'bg-red-50 text-red-500 scale-110'
+                            : 'bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-400 hover:scale-110'
+                        }`}
                 >
-                    <ShoppingCart size={18} />
+                    <Heart size={16} fill={isInWishlist(product._id) ? "currentColor" : "none"} />
                 </button>
             </div>
 
             {/* Product Info */}
             <div className="p-3 flex flex-col flex-grow">
-                <div className="flex justify-between items-start gap-2 mb-1">
-                    <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-[15px] font-medium text-gray-800 line-clamp-2 leading-tight group-hover:text-[#005E7B] transition-colors`}>
-                        {language === 'km' ? product.nameKm : product.nameEn}
-                    </h3>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isLoggedIn) { navigate('/user-login'); return; }
-                            toggleWishlist(product._id);
-                        }}
-                        className={`transition-all duration-300 transform ${isInWishlist(product._id)
-                            ? 'text-red-500 scale-110'
-                            : 'text-gray-300 hover:text-red-400 hover:scale-110'
-                            }`}
-                    >
-                        <Heart size={18} fill={isInWishlist(product._id) ? "currentColor" : "none"} />
-                    </button>
-                </div>
+                <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-[15px] font-medium text-gray-800 line-clamp-2 leading-tight group-hover:text-[#005E7B] transition-colors mb-2`}>
+                    {language === 'km' ? product.nameKm : product.nameEn}
+                </h3>
 
-                <div className="mt-auto flex items-center justify-between">
+                <div className="mt-auto flex items-center justify-between gap-2">
                     <div className="flex flex-col">
                         {product.salePrice ? (
                             <div className="flex items-center gap-1.5">
@@ -120,6 +105,15 @@ const ProductCard = ({ product, index = 0 }) => {
                             </span>
                         )}
                     </div>
+
+                    {/* Persistent Add to Cart Button */}
+                    <button
+                        onClick={handleAddToCart}
+                        className="p-2 bg-[#005E7B] text-white rounded-lg shadow-sm hover:bg-[#004b63] active:scale-95 transition-all duration-200"
+                        title={language === 'km' ? 'បន្ថែមទៅកន្ត្រក' : 'Add to Cart'}
+                    >
+                        <ShoppingCart size={18} />
+                    </button>
                 </div>
             </div>
         </motion.div>
