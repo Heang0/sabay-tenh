@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Plus } from 'lucide-react';
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = 'ecommerce_preset';
 
-const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
+const MultiImageUpload = ({ images = [], onUpload, onRemove }) => {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
 
@@ -33,7 +33,7 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
 
                     canvas.toBlob((blob) => {
                         resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-                    }, 'image/jpeg', 0.85); // 0.85 quality for perfect balance
+                    }, 'image/jpeg', 0.85); // 0.85 quality
                 };
             };
         });
@@ -42,6 +42,11 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
     const handleUpload = async (e) => {
         const originalFile = e.target.files[0];
         if (!originalFile) return;
+
+        if (images.length >= 4) {
+            setError('Maximum 4 gallery images allowed');
+            return;
+        }
 
         if (!originalFile.type.startsWith('image/')) {
             setError('Please upload an image file');
@@ -52,10 +57,9 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
         setError('');
 
         try {
-            console.log('Optimizing image for storage...');
             // Step 1: Resize BEFORE upload to save storage space
             const file = await resizeImage(originalFile);
-            console.log(`Main Image: Original ${Math.round(originalFile.size / 1024)}KB -> Resized ${Math.round(file.size / 1024)}KB`);
+            console.log(`Gallery: Original ${Math.round(originalFile.size / 1024)}KB -> Resized ${Math.round(file.size / 1024)}KB`);
 
             const formData = new FormData();
             formData.append('file', file);
@@ -72,7 +76,7 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
             const data = await response.json();
 
             if (data.secure_url) {
-                // Return optimized URL with transformations for display
+                // Return optimized URL for display
                 const optimizedUrl = data.secure_url.replace(
                     '/upload/',
                     '/upload/f_auto,q_auto,w_600,dpr_auto/'
@@ -95,68 +99,65 @@ const CloudinaryUpload = ({ onUpload, value, onRemove }) => {
     };
 
     return (
-        <div className="space-y-2">
-            {error && (
-                <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                    ❌ {error}
-                </div>
-            )}
+        <div className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+                {images.map((url, index) => (
+                    <div key={index} className="relative group">
+                        <img
+                            src={getOptimizedUrl(url)}
+                            alt={`Gallery ${index + 1}`}
+                            className="w-24 h-24 object-cover rounded-xl border border-gray-200"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => onRemove(index)}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                ))}
 
-            {value ? (
-                <div className="relative inline-block">
-                    <img
-                        src={getOptimizedUrl(value)}
-                        alt="Preview"
-                        className="w-32 h-32 object-cover rounded-lg border"
-                        loading="lazy"
-                    />
-                    <button
-                        type="button"
-                        onClick={onRemove}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-sm"
-                    >
-                        <X size={16} />
-                    </button>
-                    <p className="text-[10px] text-green-600 mt-1 font-medium">
-                        ✓ Max 600px saved to storage
-                    </p>
-                </div>
-            ) : (
-                <label className="relative block w-32 h-32 cursor-pointer">
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleUpload}
-                        disabled={uploading}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <div className={`
-                        w-full h-full border-2 border-dashed rounded-lg 
-                        flex flex-col items-center justify-center gap-2
-                        transition-colors
+                {images.length < 4 && (
+                    <label className={`
+                        w-24 h-24 border-2 border-dashed rounded-xl 
+                        flex flex-col items-center justify-center gap-1
+                        cursor-pointer transition-all
                         ${uploading
-                            ? 'border-gray-300 bg-gray-50'
-                            : 'border-blue-300 hover:border-blue-500 hover:bg-blue-50'
+                            ? 'border-gray-200 bg-gray-50'
+                            : 'border-blue-200 hover:border-blue-400 hover:bg-blue-50'
                         }
                     `}>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUpload}
+                            disabled={uploading}
+                            className="hidden"
+                        />
                         {uploading ? (
-                            <>
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                <span className="text-xs text-gray-600">Optimizing...</span>
-                            </>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                         ) : (
                             <>
-                                <Upload size={24} className="text-blue-500" />
-                                <span className="text-xs text-center text-gray-600 px-2 leading-tight">
-                                    Upload & Optimize
-                                </span>
+                                <Plus size={20} className="text-blue-500" />
+                                <span className="text-[10px] font-medium text-gray-500">Add Item</span>
                             </>
                         )}
-                    </div>
-                </label>
+                    </label>
+                )}
+            </div>
+
+            {error && (
+                <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg">
+                    ⚠️ {error}
+                </p>
             )}
+
+            <p className="text-[11px] text-gray-400 italic">
+                {images.length}/4 gallery images. Max 600px width saved to storage.
+            </p>
         </div>
     );
 };
 
-export default CloudinaryUpload;
+export default MultiImageUpload;

@@ -121,6 +121,7 @@ body {
 .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -128,6 +129,7 @@ body {
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -135,6 +137,7 @@ body {
 .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -159,8 +162,8 @@ body {
     background: #a1a1a1;
 }
 
-/* Smooth transitions */
-* {
+/* Smooth transitions - removed wildcard to fix scroll performance */
+.transition-standard {
     transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 

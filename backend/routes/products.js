@@ -116,6 +116,7 @@ router.post('/', authMiddleware, async (req, res) => {
             salePrice: req.body.salePrice ? parseFloat(req.body.salePrice) : null,
             onSale: req.body.onSale || false,
             image,
+            images: req.body.images || [], // Handle multiple images
             category,
             description: req.body.description || '',
             inStock: req.body.inStock !== undefined ? req.body.inStock : true
@@ -149,6 +150,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         if (req.body.salePrice !== undefined) product.salePrice = req.body.salePrice ? parseFloat(req.body.salePrice) : null;
         if (req.body.onSale !== undefined) product.onSale = req.body.onSale;
         if (req.body.image) product.image = req.body.image;
+        if (req.body.images) product.images = req.body.images; // Update images array
         if (req.body.category) product.category = req.body.category;
         if (req.body.description !== undefined) product.description = req.body.description;
         if (req.body.inStock !== undefined) product.inStock = req.body.inStock;

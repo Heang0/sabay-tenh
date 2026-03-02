@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { Package, Percent, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Package, Percent, ShoppingBag, ArrowLeft, Zap } from 'lucide-react';
 import { fetchProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { ProductSkeleton } from '../components/Skeleton';
@@ -128,9 +128,7 @@ const Sale = () => {
                         {/* Product Grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                             {displayedProducts.map((product, index) => (
-                                <div key={product._id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
-                                    <ProductCard product={product} index={index} />
-                                </div>
+                                <ProductCard key={product._id} product={product} index={index} />
                             ))}
                         </div>
 

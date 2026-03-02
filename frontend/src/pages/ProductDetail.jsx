@@ -6,7 +6,9 @@ import { useUser } from '../context/UserContext';
 import { useWishlist } from '../context/WishlistContext';
 import ReviewSection from '../components/ReviewSection';
 import { ShoppingCart, ArrowLeft, Heart, Minus, Plus } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
 import { fetchProductBySlug, fetchProducts } from '../services/api';
+import { motion } from 'framer-motion';
 
 const ProductDetail = () => {
     const { slug } = useParams();
@@ -19,6 +21,7 @@ const ProductDetail = () => {
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+    const [activeImage, setActiveImage] = useState('');
 
     // Pagination for related products
     const [relatedVisibleCount, setRelatedVisibleCount] = useState(8);
@@ -36,6 +39,7 @@ const ProductDetail = () => {
                 setLoading(true);
                 const productData = await fetchProductBySlug(slug);
                 setProduct(productData);
+                setActiveImage(productData.image);
 
                 const allProducts = await fetchProducts();
                 const related = allProducts
@@ -59,6 +63,24 @@ const ProductDetail = () => {
     const getDiscountPercentage = (price, salePrice) => {
         if (!salePrice) return 0;
         return Math.round(((price - salePrice) / price) * 100);
+    };
+
+    // Helper to optimize Cloudinary URLs safely
+    const getOptimizedUrl = (url, width) => {
+        if (!url) return 'https://via.placeholder.com/' + width;
+        if (!url.includes('cloudinary.com')) return url;
+
+        const uploadIndex = url.indexOf('/upload/');
+        if (uploadIndex === -1) return url;
+
+        const baseUrl = url.substring(0, uploadIndex + 8);
+        const remainingUrl = url.substring(uploadIndex + 8);
+
+        // Skip existing transformation segments
+        const parts = remainingUrl.split('/');
+        const cleanParts = parts.filter(p => !p.includes(',') && !p.includes('w_') && !p.includes('f_auto') && !p.includes('q_auto'));
+
+        return `${baseUrl}f_auto,q_auto,w_${width},dpr_auto/${cleanParts.join('/')}`;
     };
     if (loading) {
         return (
@@ -122,15 +144,48 @@ const ProductDetail = () => {
             {/* Product Main Section - edge-to-edge on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-6 mb-8">
 
-                {/* Product Image - square on all devices */}
-                <div className="w-full md:max-w-md lg:max-w-lg mx-auto bg-gray-50">
-                    <div className="relative pb-[100%] overflow-hidden rounded-lg md:rounded-xl">
-                        <img
-                            src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_600/') || 'https://via.placeholder.com/600x600'}
+                {/* Product Image & Gallery */}
+                <div className="w-full md:max-w-md lg:max-w-lg mx-auto bg-white p-2">
+                    {/* Main Image View */}
+                    <div className="relative pb-[100%] overflow-hidden rounded-2xl bg-gray-50 border border-gray-100 shadow-sm">
+                        <motion.img
+                            key={activeImage}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            src={getOptimizedUrl(activeImage || product.image, 800)}
                             alt={product.nameEn}
                             className="absolute inset-0 w-full h-full object-cover"
                         />
+                        {product.onSale && (
+                            <span className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10">
+                                -{getDiscountPercentage(product.price, product.salePrice)}%
+                            </span>
+                        )}
                     </div>
+
+                    {/* Gallery Swatches */}
+                    {product.images && product.images.length > 0 && (
+                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                            <button
+                                onClick={() => setActiveImage(product.image)}
+                                className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === product.image ? 'border-[#005E7B] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                                    }`}
+                            >
+                                <img src={getOptimizedUrl(product.image, 200)} className="w-full h-full object-cover" alt="Main" />
+                            </button>
+                            {product.images.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setActiveImage(img)}
+                                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img ? 'border-[#005E7B] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                                        }`}
+                                >
+                                    <img src={getOptimizedUrl(img, 200)} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Product Info - padding only on mobile */}
@@ -243,69 +298,10 @@ const ProductDetail = () => {
 
                     {/* Grid - edge-to-edge on mobile (px-0) */}
                     <div className="px-0 md:px-0 mt-3">
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 md:gap-6">
-                            {displayedRelated.map((product, index) => {  // Add index here
-                                const discount = getDiscountPercentage(product.price, product.salePrice);
-
-                                return (
-                                    <div
-                                        key={product._id}
-                                        onClick={() => navigate(`/product/${product.slug}`)}
-                                        className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full animate-fadeInUp"
-                                        style={{ animationDelay: `${index * 0.1}s` }}  // Add this line
-                                    >
-                                        {/* Product Image */}
-                                        <div className="relative pb-[100%] bg-gray-200 overflow-hidden flex-shrink-0">
-                                            <img
-                                                src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
-                                                alt={product.nameEn}
-                                                className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                                loading="lazy"
-                                            />
-                                            {product.onSale && (
-                                                <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-full shadow-sm z-10">
-                                                    -{discount}%
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Product Info - EXACT same as home page */}
-                                        <div className="p-3 flex flex-col flex-grow">
-                                            <h3 className={`${language === 'km' ? 'font-khmer' : 'font-sans'} text-base font-medium text-gray-800 mb-1 line-clamp-2`}>
-                                                {language === 'km' ? product.nameKm : product.nameEn}
-                                            </h3>
-
-                                            <div className="flex items-center justify-between mt-auto">
-                                                <div>
-                                                    {product.salePrice ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-sans text-sm font-bold text-red-600">
-                                                                ${product.salePrice}
-                                                            </span>
-                                                            <span className="font-sans text-xs text-gray-400 line-through">
-                                                                ${product.price}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="font-sans text-sm font-bold text-gray-800">
-                                                            ${product.price}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    className="p-2 bg-[#005E7B] text-white rounded-full hover:bg-[#004b63] hover:scale-110 transition-all duration-200"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        addToCart(product, 1);
-                                                    }}
-                                                >
-                                                    <ShoppingCart size={20} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                            {displayedRelated.map((product, index) => (
+                                <ProductCard key={product._id} product={product} index={index} />
+                            ))}
                         </div>
 
                         {/* Load More Button */}

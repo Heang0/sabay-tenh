@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createProduct } from '../../services/api';
 import CloudinaryUpload from '../../components/CloudinaryUpload';
+import MultiImageUpload from '../../components/MultiImageUpload';
 
 const AddProduct = () => {
     const [categories, setCategories] = useState([]);
@@ -13,6 +14,7 @@ const AddProduct = () => {
         salePrice: '',
         onSale: false,
         image: '',
+        images: [],
         category: '',
         description: '',
         inStock: true
@@ -23,7 +25,7 @@ const AddProduct = () => {
 
     const API_URL = import.meta.env.DEV
         ? 'http://localhost:5000/api'
-        : 'https://sabay-tenh.onrender.com/api'; 
+        : 'https://sabay-tenh.onrender.com/api';
 
     // Fetch categories
     useEffect(() => {
@@ -88,7 +90,7 @@ const AddProduct = () => {
             // Reset form
             setFormData({
                 nameKm: '', nameEn: '', price: '', salePrice: '',
-                onSale: false, image: '', category: categories[0]?._id || '',
+                onSale: false, image: '', images: [], category: categories[0]?._id || '',
                 description: '', inStock: true
             });
 
@@ -198,12 +200,28 @@ const AddProduct = () => {
                 </div>
 
                 {/* Image Upload */}
-                <div>
-                    <label className="block font-sans mb-1">Product Image <span className="text-red-500">*</span></label>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <label className="block font-sans font-bold text-gray-700 mb-2">Main Featured Image <span className="text-red-500">*</span></label>
                     <CloudinaryUpload
                         onUpload={(url) => setFormData(prev => ({ ...prev, image: url }))}
                         value={formData.image}
                         onRemove={() => setFormData(prev => ({ ...prev, image: '' }))}
+                    />
+                </div>
+
+                {/* Gallery Images */}
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <label className="block font-sans font-bold text-gray-700 mb-2">Gallery Images (Max 4)</label>
+                    <MultiImageUpload
+                        images={formData.images}
+                        onUpload={(url) => setFormData(prev => ({
+                            ...prev,
+                            images: [...prev.images, url]
+                        }))}
+                        onRemove={(index) => setFormData(prev => ({
+                            ...prev,
+                            images: prev.images.filter((_, i) => i !== index)
+                        }))}
                     />
                 </div>
 

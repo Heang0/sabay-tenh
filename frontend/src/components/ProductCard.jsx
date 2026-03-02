@@ -35,20 +35,27 @@ const ProductCard = ({ product, index = 0 }) => {
         addToCart(product, 1);
     };
 
+    const isFirstRow = index < 12;
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: isFirstRow ? 15 : 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            whileHover={{ y: -5 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
+            viewport={{ once: true, amount: 0.1 }}
+            whileHover={{ y: -4 }}
+            transition={{
+                duration: 0.4,
+                delay: isFirstRow ? (index % 4) * 0.05 : 0,
+                ease: "easeOut"
+            }}
+            style={{ willChange: "transform, opacity" }}
             onClick={() => navigate(`/product/${product.slug}`)}
-            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer flex flex-col h-full group"
+            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden cursor-pointer flex flex-col h-full group"
         >
             {/* Product Image */}
             <div className="relative pb-[100%] bg-gray-100 overflow-hidden flex-shrink-0">
                 <img
-                    src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_400/') || 'https://via.placeholder.com/400x400'}
+                    src={product.image?.replace('/upload/', '/upload/f_auto,q_auto,w_500/') || 'https://via.placeholder.com/500x500'}
                     alt={product.nameEn}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
