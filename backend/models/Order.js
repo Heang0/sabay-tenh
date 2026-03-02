@@ -26,8 +26,10 @@ const orderSchema = new mongoose.Schema({
     paymentData: {
         amountKHR: Number,
         exchangeRate: Number,
-        qrCode: String
+        qrCode: String,
+        qrImage: String
     },
+    qrExpiresAt: Date,
     orderStatus: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
     subtotal: { type: Number, required: true },
     total: { type: Number, required: true }

@@ -9,10 +9,11 @@ import abaLogo from '../assets/ABA BANK.svg';
 
 const Checkout = () => {
     const navigate = useNavigate();
-    const { cart, getCartTotal, clearCart } = useCart();
+    const { cart, getCartTotal } = useCart();
     const { language } = useLanguage();
     const { getToken } = useUser();
     const [loading, setLoading] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('Bakong KHQR');
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -27,6 +28,7 @@ const Checkout = () => {
     const [couponApplied, setCouponApplied] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState('');
+    const BAKONG_LOGO_URL = 'https://bakong.nbc.gov.kh/images/favicon.png';
 
     const subtotal = getCartTotal();
     const finalTotal = Math.max(0, subtotal - couponDiscount);
@@ -111,30 +113,26 @@ const Checkout = () => {
             total: finalTotal,
             couponCode: couponApplied ? couponApplied.code : null,
             discount: couponDiscount,
-            paymentMethod: 'ABA Payway Link',
+            paymentMethod: paymentMethod,
             paymentStatus: 'pending'
         };
 
         try {
             const response = await createOrder(orderData, token);
 
-            // Clear cart
-            clearCart();
-
             // Check if response has order data
             if (response.order && response.order.id) {
-                // Create dynamic payment link with amount
-                const baseLink = 'https://link.payway.com.kh/ABAPAYdj419233l';
-                const paymentLink = `${baseLink}?amount=${finalTotal}&orderId=${response.order.orderNumber}`;
-
-                // Open payment link in new tab
-                window.open(paymentLink, '_blank');
-
-                // Show success message
-                alert(`Order placed! Please complete payment of $${finalTotal.toFixed(2)} using the link that opened.`);
-
-                // Redirect to order tracking page
-                navigate(`/order-tracking/${response.order.id}`);
+                if (paymentMethod === 'ABA Payway Link') {
+                    // Create dynamic payment link with amount
+                    const baseLink = 'https://link.payway.com.kh/ABAPAYdj419233l';
+                    const paymentLink = `${baseLink}?amount=${finalTotal}&orderId=${response.order.orderNumber}`;
+                    window.open(paymentLink, '_blank');
+                    alert(`Order placed! Please complete payment of $${finalTotal.toFixed(2)} using the link that opened.`);
+                    navigate(`/order-tracking/${response.order.id}`);
+                } else {
+                    // Bakong - redirect to our internal payment page
+                    navigate(`/payment/${response.order.id}`);
+                }
             } else {
                 // Fallback if no order ID
                 alert('Order placed successfully!');
@@ -256,29 +254,53 @@ const Checkout = () => {
                             </div>
 
                             {/* Payment Method */}
-                            <div>
+                            <div className="mt-8">
                                 <h2 className="text-lg font-semibold mb-4 font-sans flex items-center gap-2">
                                     <CreditCard size={20} className="text-[#005E7B]" />
                                     Payment Method
                                 </h2>
 
-                                <div className="border-2 border-[#005E7B] bg-blue-50 rounded-xl p-4">
-                                    <div className="flex items-center gap-3">
-                                        <img src={abaLogo} alt="ABA Bank" className="h-8 w-auto" />
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold font-sans">ABA Payway Link</h3>
-                                            <p className="text-sm text-gray-600 font-sans">
-                                                You'll pay ${finalTotal.toFixed(2)} via secure payment link
-                                            </p>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {/* Bakong Option */}
+                                    <div
+                                        onClick={() => setPaymentMethod('Bakong KHQR')}
+                                        className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'Bakong KHQR' ? 'border-[#005E7B] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'Bakong KHQR' ? 'border-[#005E7B]' : 'border-gray-300'}`}>
+                                                {paymentMethod === 'Bakong KHQR' && <div className="w-2.5 h-2.5 rounded-full bg-[#005E7B]"></div>}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <img src={BAKONG_LOGO_URL} alt="Bakong" className="w-5 h-5 rounded-full border border-gray-200" />
+                                                        <h3 className="font-bold font-sans text-sm">Bakong KHQR</h3>
+                                                    </div>
+                                                    <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold font-sans">Fast & Safe</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 font-sans mt-0.5">Pay with any bank app instantly</p>
+                                            </div>
                                         </div>
-                                        <ExternalLink size={20} className="text-[#005E7B]" />
                                     </div>
-                                </div>
 
-                                <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-                                    <p className="text-sm text-yellow-800 font-sans">
-                                        <span className="font-bold">Note:</span> After placing order, a payment link will open in new tab. Complete payment there.
-                                    </p>
+                                    {/* ABA Payway Option */}
+                                    <div
+                                        onClick={() => setPaymentMethod('ABA Payway Link')}
+                                        className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'ABA Payway Link' ? 'border-[#005E7B] bg-blue-50 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'ABA Payway Link' ? 'border-[#005E7B]' : 'border-gray-300'}`}>
+                                                {paymentMethod === 'ABA Payway Link' && <div className="w-2.5 h-2.5 rounded-full bg-[#005E7B]"></div>}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-bold font-sans text-sm">ABA Payway</h3>
+                                                    <img src={abaLogo} alt="ABA" className="h-4 opacity-70" />
+                                                </div>
+                                                <p className="text-xs text-gray-500 font-sans mt-0.5">Redirect to secure payment link</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

@@ -7,6 +7,7 @@ const Coupon = require('../models/Coupon');
 const authMiddleware = require('../middleware/auth');
 const { sendOrderReceipt } = require('../services/emailService');
 const { sendOrderNotification } = require('../services/telegram');
+const bakongService = require('../services/bakong');
 
 // Helper function to generate order number
 const generateOrderNumber = () => {
@@ -96,6 +97,36 @@ router.post('/', async (req, res) => {
 
         // Create and save order
         const order = new Order(orderData);
+
+        // If Bakong is selected, generate QR immediately
+        if (order.paymentMethod === 'Bakong KHQR') {
+            try {
+                const qrResult = await bakongService.generateKHQR(order);
+                if (qrResult.success) {
+                    order.paymentMd5 = qrResult.md5;
+                    order.paymentStatus = 'pending';
+                    order.paymentData = {
+                        amountKHR: qrResult.amountKHR,
+                        exchangeRate: 4100,
+                        qrCode: qrResult.qrCode,
+                        qrImage: qrResult.qrImage
+                    };
+                    order.qrExpiresAt = new Date(qrResult.validUntil);
+                } else {
+                    return res.status(502).json({
+                        success: false,
+                        message: 'Failed to initialize Bakong payment. Please try again.'
+                    });
+                }
+            } catch (err) {
+                console.error('Bakong QR generation failed:', err.message);
+                return res.status(502).json({
+                    success: false,
+                    message: 'Failed to initialize Bakong payment. Please try again.'
+                });
+            }
+        }
+
         const savedOrder = await order.save();
 
 
@@ -163,6 +194,9 @@ router.get('/:id', async (req, res) => {
                 paymentMethod: order.paymentMethod,
                 paymentStatus: order.paymentStatus,
                 orderStatus: order.orderStatus,
+                qrImage: order.paymentData?.qrImage,
+                paymentData: order.paymentData,
+                qrExpiresAt: order.qrExpiresAt,
                 createdAt: order.createdAt
             }
         });
@@ -171,6 +205,85 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+});
+
+// GET payment status check for Bakong KHQR (public)
+router.get('/:id/check-payment', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // If not a Bakong order or no md5, return unknown
+        if (order.paymentMethod !== 'Bakong KHQR' || !order.paymentMd5) {
+            return res.json({
+                status: 'unknown',
+                message: 'Not a Bakong KHQR order or missing payment reference'
+            });
+        }
+
+        if (order.paymentStatus === 'paid') {
+            return res.json({ status: 'paid' });
+        }
+
+        // Enforce QR expiration (real 3-min expiry)
+        const now = new Date();
+        if (order.qrExpiresAt && new Date(order.qrExpiresAt) < now) {
+            if (order.paymentStatus !== 'failed') {
+                order.paymentStatus = 'failed';
+                await order.save();
+            }
+            return res.json({
+                status: 'expired',
+                message: 'QR code has expired'
+            });
+        }
+
+        // Mock mode: auto-approve mock orders for dev
+        if (process.env.BAKONG_MOCK === 'true' && order.paymentMd5?.startsWith('mock_md5_')) {
+            order.paymentStatus = 'paid';
+            if (order.orderStatus === 'pending') {
+                order.orderStatus = 'processing';
+            }
+            await order.save();
+            return res.json({ status: 'paid' });
+        }
+
+        const result = await bakongService.checkPaymentStatus(order.paymentMd5);
+
+        let statusResponse;
+        if (result.success && result.status === 'PAID') {
+            order.paymentStatus = 'paid';
+            if (order.orderStatus === 'pending') {
+                order.orderStatus = 'processing';
+            }
+            await order.save();
+            statusResponse = { status: 'paid' };
+        } else if (result.success && result.status === 'UNPAID') {
+            statusResponse = {
+                status: 'pending',
+                ...(result.transient ? { message: result.error } : {})
+            };
+        } else {
+            statusResponse = {
+                status: 'error',
+                message: result.error || 'Payment check failed'
+            };
+        }
+
+        res.json(statusResponse);
+    } catch (error) {
+        console.error('Error checking Bakong payment status:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal server error during payment check'
         });
     }
 });

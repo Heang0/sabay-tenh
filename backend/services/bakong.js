@@ -1,59 +1,109 @@
 const axios = require('axios');
+const { BakongKHQR, IndividualInfo, khqrData } = require('bakong-khqr');
 
 class BakongService {
     constructor() {
-        this.accountId = process.env.BAKONG_ACCOUNT_ID; // hak_chhaiheag@bkrt
-        this.merchantName = process.env.BAKONG_MERCHANT_NAME; // Saby Tenh
-        this.accessToken = process.env.BAKONG_ACCESS_TOKEN; // Your token
+        this.accountId = process.env.BAKONG_ACCOUNT_ID;
+        this.merchantName = process.env.BAKONG_MERCHANT_NAME;
+        this.merchantCity = process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh';
+        this.accessToken = process.env.BAKONG_TOKEN;
         this.baseUrl = process.env.BAKONG_ENV === 'production'
             ? 'https://api-bakong.nbc.gov.kh/v1'
-            : 'https://api-bakong-sandbox.nbc.gov.kh/v1';
+            : 'https://sit-api-bakong.nbc.gov.kh/v1';
+        this.isMock = process.env.BAKONG_MOCK === 'true';
+        this.exchangeRate = Number(process.env.BAKONG_EXCHANGE_RATE || 4100);
+        this.khqr = new BakongKHQR();
     }
 
-    // Generate KHQR code using official Bakong API
+    // Generate a dummy QR image (base64 PNG) for development
+    _generateMockQR() {
+        // 1x1 blue pixel PNG (minimal valid PNG)
+        const pngHeader = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        return `data:image/png;base64,${pngHeader}`;
+    }
+
+    _getAuthHeaders() {
+        if (!this.accessToken) {
+            throw new Error('Missing BAKONG_TOKEN in environment');
+        }
+
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.accessToken}`
+        };
+    }
+
+    // Generate dynamic KHQR locally using bakong-khqr
     async generateKHQR(order) {
         try {
+            const amountInUSD = Number(order.total);
+            if (!Number.isFinite(amountInUSD) || amountInUSD <= 0) {
+                throw new Error('Invalid order total for KHQR generation');
+            }
+            const amountInKHR = Math.round(amountInUSD * this.exchangeRate);
 
-            const amountInUSD = order.total;
-            const amountInKHR = Math.round(amountInUSD * 4100); // Convert to KHR
+            // Set QR valid for 3 minutes
+            const validUntil = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
-            const payload = {
-                amount: amountInKHR,
-                currency: 'KHR',
-                billNumber: order.orderNumber,
-                mobileNumber: order.customer.phone.replace(/^0+/, '855'), // Format: 85512345678
-                storeLabel: 'Online Store',
-                terminalLabel: 'Web',
-                accountInformation: this.accountId,
-                merchantName: this.merchantName,
-                merchantCity: 'Phnom Penh'
-            };
-
-
-            const response = await axios.post(
-                `${this.baseUrl}/khrq/generate`,
-                payload,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.accessToken}`
-                    }
-                }
-            );
-
-
-            if (response.data && response.data.qrImage) {
+            if (this.isMock) {
+                // Mock mode: return dummy data
                 return {
                     success: true,
-                    qrCode: response.data.qr,
-                    qrImage: `data:image/png;base64,${response.data.qrImage}`, // Has Bakong logo!
-                    md5: response.data.md5,
+                    qrCode: 'mock_qr_123',
+                    qrImage: this._generateMockQR(),
+                    md5: 'mock_md5_' + Math.random().toString(36).substring(2, 10),
                     amountUSD: amountInUSD,
-                    amountKHR: amountInKHR
+                    amountKHR: amountInKHR,
+                    validUntil: validUntil
                 };
-            } else {
-                throw new Error('Failed to generate QR code');
             }
+
+            if (!this.accountId || !this.merchantName) {
+                throw new Error('Missing BAKONG_ACCOUNT_ID or BAKONG_MERCHANT_NAME in environment');
+            }
+
+            const optionalData = {
+                currency: khqrData.currency.khr,
+                amount: amountInKHR,
+                billNumber: order.orderNumber,
+                mobileNumber: String(order.customer?.phone || '').replace(/^0+/, '855'),
+                storeLabel: 'Online Store',
+                terminalLabel: 'Web',
+                expirationTimestamp: new Date(validUntil).getTime()
+            };
+
+            const individualInfo = new IndividualInfo(
+                this.accountId,
+                this.merchantName,
+                this.merchantCity,
+                optionalData
+            );
+            const khqrResponse = this.khqr.generateIndividual(individualInfo);
+
+            const statusCode = khqrResponse?.status?.code;
+            if (statusCode !== 0 || !khqrResponse?.data?.qr || !khqrResponse?.data?.md5) {
+                throw new Error(khqrResponse?.status?.message || 'Failed to generate KHQR locally');
+            }
+
+            const qrCode = khqrResponse.data.qr;
+            const md5 = khqrResponse.data.md5;
+            const qrImage = [
+                'https://quickchart.io/qr',
+                `?size=320`,
+                `&ecLevel=M`,
+                `&margin=2`,
+                `&text=${encodeURIComponent(qrCode)}`
+            ].join('');
+
+            return {
+                success: true,
+                qrCode,
+                qrImage,
+                md5,
+                amountUSD: amountInUSD,
+                amountKHR: amountInKHR,
+                validUntil: validUntil
+            };
         } catch (error) {
             console.error('KHQR Generation Error:', error.response?.data || error.message);
             throw error;
@@ -63,21 +113,27 @@ class BakongService {
     // Check payment status using MD5
     async checkPaymentStatus(md5) {
         try {
+            if (!md5) {
+                return {
+                    success: false,
+                    status: 'ERROR',
+                    error: 'Missing payment reference (md5)'
+                };
+            }
 
             const response = await axios.post(
                 `${this.baseUrl}/check_transaction_by_md5`,
                 { md5 },
                 {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.accessToken}`
-                    }
+                    headers: this._getAuthHeaders()
                 }
             );
 
+            const responseCode = response.data?.responseCode ?? response.data?.response_code;
+            const isPaid = responseCode === 0 || responseCode === '0';
 
             // Response code 0 means payment found
-            if (response.data && response.data.responseCode === 0) {
+            if (isPaid) {
                 return {
                     success: true,
                     status: 'PAID',
@@ -91,7 +147,19 @@ class BakongService {
                 };
             }
         } catch (error) {
+            const httpStatus = error.response?.status;
+            const isTemporary = [401, 408, 429, 500, 502, 503, 504].includes(httpStatus);
             console.error('Payment check error:', error.response?.data || error.message);
+
+            if (isTemporary) {
+                return {
+                    success: true,
+                    status: 'UNPAID',
+                    transient: true,
+                    error: `Bakong check temporarily unavailable (HTTP ${httpStatus})`
+                };
+            }
+
             return {
                 success: false,
                 status: 'ERROR',
