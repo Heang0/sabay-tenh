@@ -44,15 +44,18 @@ const getFirebaseError = (code) => {
 
 const UserLogin = () => {
     const navigate = useNavigate();
-    const { signInWithGoogle, signInWithEmail, loading, isLoggedIn } = useUser();
+    const [isResetMode, setIsResetMode] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetSent, setResetSent] = useState(false);
+    const { signInWithGoogle, signInWithEmail, resetPassword, loading, isLoggedIn } = useUser();
+
     const { language } = useLanguage();
+    const km = language === 'km';
 
     const [form, setForm] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
-
-    const km = language === 'km';
 
     // Fixed: Redirect if already logged in using useEffect
     useEffect(() => {
@@ -61,7 +64,104 @@ const UserLogin = () => {
         }
     }, [isLoggedIn, navigate]);
 
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        if (!resetEmail) {
+            setError(km ? 'សូមបញ្ចូលអ៊ីមែលរបស់អ្នក' : 'Please enter your email.');
+            return;
+        }
+        setSubmitting(true);
+        const result = await resetPassword(resetEmail);
+        if (result.success) {
+            setResetSent(true);
+            setError('');
+        } else {
+            setError(getFirebaseError(result.code));
+        }
+        setSubmitting(false);
+    };
+
     if (isLoggedIn) return null;
+
+    if (isResetMode) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 px-4 py-12">
+                <div className="w-full max-w-md">
+                    <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/60 overflow-hidden">
+                        <div className="h-1.5 bg-gradient-to-r from-[#005E7B] via-teal-400 to-cyan-400" />
+                        <div className="p-8">
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 bg-gradient-to-br from-[#005E7B] to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
+                                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                    </svg>
+                                </div>
+                                <h1 className={`text-2xl font-bold text-gray-900 ${km ? 'font-khmer' : ''}`}>
+                                    {km ? 'ប្តូរពាក្យសម្ងាត់' : 'Reset Password'}
+                                </h1>
+                                <p className={`text-sm text-gray-400 mt-1 ${km ? 'font-khmer' : ''}`}>
+                                    {km ? 'យើងនឹងផ្ញើតំណភ្ជាប់ដើម្បីប្តូរពាក្យសម្ងាត់ទៅកាន់អ៊ីមែលរបស់អ្នក' : 'We will send a reset link to your email'}
+                                </p>
+                            </div>
+
+                            {resetSent ? (
+                                <div className="text-center space-y-6">
+                                    <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-100 text-sm">
+                                        {km ? 'តំណភ្ជាប់ត្រូវបានផ្ញើ! សូមពិនិត្យមើលអ៊ីមែលរបស់អ្នក។' : 'Reset link sent! Please check your email inbox.'}
+                                    </div>
+                                    <button
+                                        onClick={() => setIsResetMode(false)}
+                                        className="w-full py-3 rounded-xl bg-[#005E7B] text-white font-semibold text-sm shadow-lg hover:bg-[#004d66] transition-all"
+                                    >
+                                        {km ? 'ត្រឡប់ទៅការចូល' : 'Back to Login'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleResetPassword} className="space-y-4">
+                                    <div>
+                                        <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${km ? 'font-khmer' : ''}`}>
+                                            {km ? 'អ៊ីមែលរបស់អ្នក' : 'Your Email'}
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={resetEmail}
+                                            onChange={(e) => {
+                                                setError('');
+                                                setResetEmail(e.target.value);
+                                            }}
+                                            placeholder="email@example.com"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#005E7B]/30 focus:border-[#005E7B] transition-all"
+                                        />
+                                    </div>
+                                    {error && (
+                                        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                                            {error}
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#005E7B] to-teal-500 text-white font-semibold text-sm shadow-lg hover:shadow-teal-300 transition-all disabled:opacity-60"
+                                        >
+                                            {submitting ? (km ? 'កំពុងផ្ញើ...' : 'Sending...') : (km ? 'ផ្ញើតំណភ្ជាប់ប្តូរពាក្យសម្ងាត់' : 'Send Reset Link')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsResetMode(false)}
+                                            className="text-sm text-gray-500 hover:text-[#005E7B] transition-colors"
+                                        >
+                                            {km ? 'ត្រឡប់ទៅវិញ' : 'Cancel'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const handleChange = (e) => {
         setError('');
@@ -134,6 +234,13 @@ const UserLogin = () => {
                                     <label className={`text-sm font-medium text-gray-700 ${km ? 'font-khmer' : ''}`}>
                                         {km ? 'ពាក្យសម្ងាត់' : 'Password'}
                                     </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsResetMode(true)}
+                                        className={`text-xs font-semibold text-[#005E7B] hover:text-teal-600 transition-colors ${km ? 'font-khmer' : ''}`}
+                                    >
+                                        {km ? 'ភ្លេចពាក្យសម្ងាត់?' : 'Forgot password?'}
+                                    </button>
                                 </div>
                                 <div className="relative">
                                     <input
@@ -180,6 +287,7 @@ const UserLogin = () => {
                             <div className="flex-1 h-px bg-gray-100" />
                         </div>
                         <button
+                            type="button"
                             onClick={handleGoogleSignIn}
                             disabled={loading || submitting}
                             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 disabled:opacity-50 group"

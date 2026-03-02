@@ -16,6 +16,7 @@ import ProductDetail from './pages/ProductDetail';
 import Checkout from './pages/Checkout';
 import PaymentPage from './pages/PaymentPage';
 import OrderSuccess from './pages/OrderSuccess';
+import ResetPassword from './pages/ResetPassword';
 import AddProduct from './pages/admin/AddProduct';
 import CouponManagement from './pages/admin/CouponManagement';
 import { useLanguage } from './context/LanguageContext';
@@ -55,7 +56,7 @@ function AppContent() {
   const isProductRoute = location.pathname.startsWith('/product');
   const isPaymentRoute = location.pathname.startsWith('/payment');
   const isOrderSuccessRoute = location.pathname.startsWith('/order-success');
-  const isAuthRoute = ['/user-login', '/register', '/login'].includes(location.pathname);
+  const isAuthRoute = ['/user-login', '/register', '/login', '/reset-password'].includes(location.pathname);
   const hideHeader = isAdminRoute || isCheckoutRoute || isPaymentRoute || isOrderSuccessRoute || isAuthRoute;
 
   // Filter states
@@ -367,6 +368,7 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Other Routes */}
           <Route path="/product/:slug" element={<ProductDetail />} />

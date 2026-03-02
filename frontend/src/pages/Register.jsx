@@ -284,6 +284,7 @@ const Register = () => {
 
                         {/* Google Button */}
                         <button
+                            type="button"
                             onClick={handleGoogleSignIn}
                             disabled={loading || submitting}
                             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 disabled:opacity-50 group"

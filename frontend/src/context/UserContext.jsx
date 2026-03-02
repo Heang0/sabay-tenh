@@ -5,8 +5,10 @@ import {
     signOut,
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    updateProfile
+    updateProfile,
+    sendPasswordResetEmail,
+    verifyPasswordResetCode,
+    confirmPasswordReset
 } from 'firebase/auth';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
@@ -134,6 +136,38 @@ export const UserProvider = ({ children }) => {
         return null;
     };
 
+    const resetPassword = async (email) => {
+        try {
+            setLoading(true);
+            await sendPasswordResetEmail(auth, email);
+            return { success: true };
+        } catch (error) {
+            console.error('Password reset error:', error);
+            return { success: false, message: error.message, code: error.code };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const verifyResetCode = async (code) => {
+        try {
+            return await verifyPasswordResetCode(auth, code);
+        } catch (error) {
+            console.error('Verify reset code error:', error);
+            throw error;
+        }
+    };
+
+    const confirmReset = async (code, newPassword) => {
+        try {
+            await confirmPasswordReset(auth, code, newPassword);
+            return { success: true };
+        } catch (error) {
+            console.error('Confirm reset error:', error);
+            return { success: false, message: error.message, code: error.code };
+        }
+    };
+
     const value = {
         user,
         firebaseUser,
@@ -141,6 +175,9 @@ export const UserProvider = ({ children }) => {
         signInWithGoogle,
         signInWithEmail,
         registerWithEmail,
+        resetPassword,
+        verifyResetCode,
+        confirmReset,
         logout,
         getToken,
         isLoggedIn: !!user && !!firebaseUser
