@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useUser } from '../context/UserContext';
 import { translations } from '../context/translations';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 
 const CartSidebar = () => {
     const navigate = useNavigate();
     const { language } = useLanguage();
+    const { isLoggedIn } = useUser();
     const t = translations[language];
     const {
         cart,
@@ -25,6 +27,10 @@ const CartSidebar = () => {
 
     const handleCheckout = () => {
         setIsOpen(false);
+        if (!isLoggedIn) {
+            navigate('/user-login');
+            return;
+        }
         navigate('/checkout');
     };
 

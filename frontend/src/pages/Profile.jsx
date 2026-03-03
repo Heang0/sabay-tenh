@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
-import { fetchUserOrders } from '../services/api';
+import { fetchUserOrders, retryOrderPayment } from '../services/api';
 import {
     Mail, LogOut, Package, Clock, ChevronRight,
     ArrowLeft, ShoppingBag, User, CheckCircle, Heart
@@ -40,6 +40,7 @@ const Profile = () => {
 
     const [orders, setOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(true);
+    const [retryingOrderId, setRetryingOrderId] = useState(null);
     const [tab, setTab] = useState('orders');
 
     useEffect(() => {
@@ -63,6 +64,20 @@ const Profile = () => {
     const handleLogout = async () => {
         await logout();
         navigate('/');
+    };
+
+    const handleRetryPayment = async (orderId, event) => {
+        event.stopPropagation();
+        try {
+            setRetryingOrderId(orderId);
+            const token = await getToken();
+            await retryOrderPayment(orderId, token);
+            navigate(`/payment/${orderId}`);
+        } catch (error) {
+            alert(error.message || 'Unable to regenerate payment QR. Please try again.');
+        } finally {
+            setRetryingOrderId(null);
+        }
     };
 
     if (!user) return null;
@@ -242,7 +257,21 @@ const Profile = () => {
                                                 <Badge status={order.paymentStatus} />
                                             </div>
                                         </div>
-                                        <p className="text-base font-bold text-[#005E7B] flex-shrink-0">${Number(order.total).toFixed(2)}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-base font-bold text-[#005E7B] flex-shrink-0">${Number(order.total).toFixed(2)}</p>
+                                            {order.canRetryPayment && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(event) => handleRetryPayment(order.id, event)}
+                                                    disabled={retryingOrderId === order.id}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#005E7B] text-white hover:bg-[#004a63] disabled:opacity-60 disabled:cursor-not-allowed"
+                                                >
+                                                    {retryingOrderId === order.id
+                                                        ? (km ? 'កំពុងបង្កើត QR...' : 'Preparing...')
+                                                        : (km ? 'បង់ឡើងវិញ' : 'Pay now')}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))

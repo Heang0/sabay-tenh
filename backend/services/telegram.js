@@ -35,7 +35,7 @@ const sendOrderNotification = async (order) => {
 
     const itemsText = formatItems(order.items);
     const message = [
-        'NEW ORDER RECEIVED',
+        'PAID ORDER CONFIRMED',
         '',
         `Order Number: ${order.orderNumber}`,
         `Customer: ${order.customer.fullName}`,

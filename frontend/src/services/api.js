@@ -356,4 +356,25 @@ export const fetchUserOrders = async (token) => {
   }
 };
 
+export const retryOrderPayment = async (orderId, token) => {
+  try {
+    const response = await fetch(`${API_URL}/orders/${orderId}/retry-payment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to regenerate payment QR');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error retrying order payment:', error);
+    throw error;
+  }
+};
+
 export default API_URL;

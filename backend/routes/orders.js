@@ -5,10 +5,10 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const Coupon = require('../models/Coupon');
 const authMiddleware = require('../middleware/auth');
+const userAuth = require('../middleware/userAuth');
 const { sendOrderReceipt } = require('../services/emailService');
 const {
     sendOrderNotification,
-    sendCustomerOrderCreatedNotification,
     sendCustomerPaymentConfirmedNotification
 } = require('../services/telegram');
 const bakongService = require('../services/bakong');
@@ -19,6 +19,11 @@ const PAYMENT_CHECK_MIN_INTERVAL_MS = 10000;
 const PAYMENT_CHECK_TRANSIENT_MS = 30000;
 const QR_EXPIRED_RETRY_MS = 30000;
 const QR_CONFIRMATION_GRACE_MS = 10 * 60 * 1000;
+const retryWindowDaysRaw = Number(process.env.UNPAID_ORDER_EXPIRE_DAYS || 3);
+const PAYMENT_RETRY_WINDOW_DAYS = Number.isFinite(retryWindowDaysRaw) && retryWindowDaysRaw > 0
+    ? retryWindowDaysRaw
+    : 3;
+const PAYMENT_RETRY_WINDOW_MS = PAYMENT_RETRY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 const normalizeSiteCode = (value) => {
     const normalized = String(value || '')
@@ -56,14 +61,19 @@ const sendPaidReceiptIfNeeded = async (order) => {
     }
 };
 
-const sendCustomerOrderCreatedTelegramIfPossible = async (order) => {
+const sendAdminPaidTelegramIfNeeded = async (order) => {
     try {
-        if (!order?.userId) return;
-        const user = await User.findById(order.userId).select('telegramId telegramUsername displayName');
-        if (!user?.telegramId) return;
-        await sendCustomerOrderCreatedNotification(order, user);
+        if (!order) return;
+        if (order.paymentStatus !== 'paid') return;
+        if (order.adminPaidNotifiedAt) return;
+
+        const sent = await sendOrderNotification(order);
+        if (sent) {
+            order.adminPaidNotifiedAt = new Date();
+            await order.save();
+        }
     } catch (err) {
-        console.error('Customer Telegram create-notify error:', err.message);
+        console.error('Admin Telegram paid-notify error:', err.message);
     }
 };
 
@@ -92,6 +102,33 @@ const sendCustomerPaidTelegramIfNeeded = async (order) => {
 // CREATE order (public - checkout)
 router.post('/', async (req, res) => {
     try {
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Please login to place an order'
+            });
+        }
+
+        const idToken = authHeader.split(' ')[1];
+        let firebaseUid;
+        try {
+            const decodedToken = await admin.auth().verifyIdToken(idToken);
+            firebaseUid = decodedToken.uid;
+        } catch (error) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or expired login session'
+            });
+        }
+
+        const currentUser = await User.findOne({ firebaseUid });
+        if (!currentUser) {
+            return res.status(401).json({
+                success: false,
+                message: 'User account not found. Please login again.'
+            });
+        }
 
         // Validate required fields
         if (!req.body.customer || !req.body.customer.fullName || !req.body.customer.phone || !req.body.customer.address) {
@@ -111,16 +148,7 @@ router.post('/', async (req, res) => {
         // Generate order number
         const orderNumber = generateOrderNumber();
 
-        // Try to extract userId from Firebase token if user is logged in
-        let userId = null;
-        try {
-            const token = req.headers.authorization?.split(' ')[1];
-            if (token) {
-                const decodedToken = await admin.auth().verifyIdToken(token);
-                const user = await User.findOne({ firebaseUid: decodedToken.uid });
-                if (user) userId = user._id;
-            }
-        } catch (e) { /* Guest checkout - no user */ }
+        const userId = currentUser._id;
 
         // Handle coupon if provided
         let couponCode = req.body.couponCode || null;
@@ -147,7 +175,7 @@ router.post('/', async (req, res) => {
                 fullName: req.body.customer.fullName,
                 phone: req.body.customer.phone,
                 address: req.body.customer.address,
-                email: req.body.customer.email || '',
+                email: req.body.customer.email || currentUser.email || '',
                 note: req.body.customer.note || ''
             },
             items: req.body.items.map(item => ({
@@ -201,13 +229,6 @@ router.post('/', async (req, res) => {
 
         const savedOrder = await order.save();
 
-        sendOrderNotification(savedOrder).catch(err =>
-            console.error('Background telegram error:', err.message)
-        );
-        sendCustomerOrderCreatedTelegramIfPossible(savedOrder).catch(err =>
-            console.error('Background customer telegram error:', err.message)
-        );
-
         res.status(201).json({
             success: true,
             message: 'Order created successfully',
@@ -228,6 +249,91 @@ router.post('/', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to create order'
+        });
+    }
+});
+
+// Regenerate Bakong QR for an unpaid order (user only, within retry window)
+router.post('/:id/retry-payment', userAuth, async (req, res) => {
+    try {
+        if (!req.user?.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Please login to retry payment'
+            });
+        }
+
+        const order = await Order.findOne({ _id: req.params.id, userId: req.user.id });
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        if (order.paymentMethod !== 'Bakong KHQR') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only Bakong KHQR orders can be retried'
+            });
+        }
+
+        if (order.paymentStatus === 'paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'This order is already paid'
+            });
+        }
+
+        const orderAgeMs = Date.now() - new Date(order.createdAt).getTime();
+        if (orderAgeMs > PAYMENT_RETRY_WINDOW_MS) {
+            return res.status(410).json({
+                success: false,
+                message: `Payment retry period expired for this order (${PAYMENT_RETRY_WINDOW_DAYS} days)`
+            });
+        }
+
+        const qrResult = await bakongService.generateKHQR(order);
+        if (!qrResult.success) {
+            return res.status(502).json({
+                success: false,
+                message: 'Failed to regenerate Bakong payment QR. Please try again.'
+            });
+        }
+
+        order.paymentMd5 = qrResult.md5;
+        order.paymentStatus = 'pending';
+        order.paymentData = {
+            currency: qrResult.currency || 'USD',
+            amountUSD: qrResult.amountUSD,
+            amountKHR: qrResult.amountKHR,
+            exchangeRate: qrResult.amountKHR ? 4100 : null,
+            qrCode: qrResult.qrCode,
+            qrImage: qrResult.qrImage
+        };
+        order.qrExpiresAt = new Date(qrResult.validUntil);
+
+        await order.save();
+        paymentCheckCache.delete(String(order._id));
+
+        return res.json({
+            success: true,
+            message: 'Payment QR regenerated successfully',
+            order: {
+                id: order._id,
+                orderNumber: order.orderNumber,
+                total: order.total,
+                paymentStatus: order.paymentStatus,
+                orderStatus: order.orderStatus,
+                qrExpiresAt: order.qrExpiresAt,
+                paymentData: order.paymentData
+            }
+        });
+    } catch (error) {
+        console.error('Retry payment error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to regenerate payment QR'
         });
     }
 });
@@ -293,6 +399,7 @@ router.get('/:id/check-payment', async (req, res) => {
 
         if (order.paymentStatus === 'paid') {
             sendPaidReceiptIfNeeded(order);
+            sendAdminPaidTelegramIfNeeded(order);
             sendCustomerPaidTelegramIfNeeded(order);
             return res.json({ status: 'paid' });
         }
@@ -323,6 +430,7 @@ router.get('/:id/check-payment', async (req, res) => {
             }
             await order.save();
             sendPaidReceiptIfNeeded(order);
+            sendAdminPaidTelegramIfNeeded(order);
             sendCustomerPaidTelegramIfNeeded(order);
             return res.json({ status: 'paid' });
         }
@@ -344,6 +452,7 @@ router.get('/:id/check-payment', async (req, res) => {
             }
             await order.save();
             sendPaidReceiptIfNeeded(order);
+            sendAdminPaidTelegramIfNeeded(order);
             sendCustomerPaidTelegramIfNeeded(order);
             statusResponse = { status: 'paid' };
             paymentCheckCache.delete(cacheKey);
@@ -487,6 +596,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         const updatedOrder = await order.save();
         if (previousPaymentStatus !== 'paid' && updatedOrder.paymentStatus === 'paid') {
             sendPaidReceiptIfNeeded(updatedOrder);
+            sendAdminPaidTelegramIfNeeded(updatedOrder);
             sendCustomerPaidTelegramIfNeeded(updatedOrder);
         }
 

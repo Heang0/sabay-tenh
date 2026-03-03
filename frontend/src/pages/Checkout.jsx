@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,7 +10,7 @@ const Checkout = () => {
     const navigate = useNavigate();
     const { cart, getCartTotal } = useCart();
     const { language } = useLanguage();
-    const { getToken } = useUser();
+    const { getToken, isLoggedIn, loading: userLoading } = useUser();
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('Bakong KHQR');
     const [formData, setFormData] = useState({
@@ -31,6 +31,12 @@ const Checkout = () => {
 
     const subtotal = getCartTotal();
     const finalTotal = Math.max(0, subtotal - couponDiscount);
+
+    useEffect(() => {
+        if (!userLoading && !isLoggedIn) {
+            navigate('/user-login', { replace: true });
+        }
+    }, [isLoggedIn, userLoading, navigate]);
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -82,6 +88,23 @@ const Checkout = () => {
         );
     }
 
+    if (!userLoading && !isLoggedIn) {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+                <div className="bg-white rounded-xl shadow-sm p-8">
+                    <h2 className="text-xl font-semibold mb-2 font-sans">Login Required</h2>
+                    <p className="text-gray-500 mb-6 font-sans">Please login or register before checkout.</p>
+                    <button
+                        onClick={() => navigate('/user-login')}
+                        className="px-6 py-2 bg-[#005E7B] text-white rounded-lg hover:bg-[#004b63] transition-colors font-sans"
+                    >
+                        Go to Login
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -94,8 +117,14 @@ const Checkout = () => {
 
         setLoading(true);
 
-        // Get Firebase token to link order to logged-in user (if any)
+        // Order creation is now account-only.
         const token = await getToken();
+        if (!token) {
+            alert('Please login before checkout.');
+            navigate('/user-login');
+            setLoading(false);
+            return;
+        }
 
         const total = getCartTotal();
         const orderData = {

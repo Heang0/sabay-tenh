@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('mongo-sanitize');
 const hpp = require('hpp');
 require('dotenv').config();
+const { startOrderExpiryCleanupJob } = require('./jobs/orderExpiryCleanup');
 
 const app = express();
 
@@ -83,7 +84,9 @@ app.use(express.json({ limit: '10kb' })); // Limit body size to prevent huge pay
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => { })
+  .then(() => {
+    startOrderExpiryCleanupJob();
+  })
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Routes

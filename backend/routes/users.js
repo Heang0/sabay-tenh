@@ -5,8 +5,16 @@ const router = express.Router();
 const User = require('../models/User');
 const Order = require('../models/Order');
 const userAuth = require('../middleware/userAuth');
+const bakongService = require('../services/bakong');
+const { sendOrderReceipt } = require('../services/emailService');
+const { sendCustomerPaymentConfirmedNotification, sendOrderNotification } = require('../services/telegram');
 
 const TELEGRAM_AUTH_MAX_AGE_SECONDS = 5 * 60;
+const retryWindowDaysRaw = Number(process.env.UNPAID_ORDER_EXPIRE_DAYS || 3);
+const PAYMENT_RETRY_WINDOW_DAYS = Number.isFinite(retryWindowDaysRaw) && retryWindowDaysRaw > 0
+    ? retryWindowDaysRaw
+    : 3;
+const PAYMENT_RETRY_WINDOW_MS = PAYMENT_RETRY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 const toNonEmptyString = (value) => {
     if (typeof value !== 'string') return null;
@@ -102,6 +110,52 @@ const upsertUserFromIdentity = async ({
 
     await user.save();
     return user;
+};
+
+const reconcilePendingBakongOrder = async (order, user) => {
+    if (!order) return order;
+    if (order.paymentMethod !== 'Bakong KHQR') return order;
+    if (!order.paymentMd5) return order;
+    if (order.paymentStatus === 'paid') return order;
+
+    try {
+        const result = await bakongService.checkPaymentStatus(order.paymentMd5);
+        if (!(result.success && result.status === 'PAID')) {
+            return order;
+        }
+
+        order.paymentStatus = 'paid';
+        if (order.orderStatus === 'pending') {
+            order.orderStatus = 'processing';
+        }
+
+        if (!order.receiptSentAt && order.customer?.email) {
+            const mailResult = await sendOrderReceipt(order);
+            if (mailResult) {
+                order.receiptSentAt = new Date();
+            }
+        }
+
+        if (!order.telegramPaidNotifiedAt && user?.telegramId) {
+            const sent = await sendCustomerPaymentConfirmedNotification(order, user);
+            if (sent) {
+                order.telegramPaidNotifiedAt = new Date();
+            }
+        }
+
+        if (!order.adminPaidNotifiedAt) {
+            const sent = await sendOrderNotification(order);
+            if (sent) {
+                order.adminPaidNotifiedAt = new Date();
+            }
+        }
+
+        await order.save();
+    } catch (error) {
+        console.error(`Bakong reconcile error for order ${order.orderNumber}:`, error.message);
+    }
+
+    return order;
 };
 
 // POST /api/users/telegram-auth - verify Telegram payload and issue Firebase custom token
@@ -279,17 +333,46 @@ router.get('/orders', userAuth, async (req, res) => {
         const orders = await Order.find({ userId: user._id })
             .sort({ createdAt: -1 });
 
-        res.json({
-            success: true,
-            orders: orders.map(order => ({
+        const visibleOrders = [];
+        const nowMs = Date.now();
+
+        for (const order of orders) {
+            const createdAtMs = new Date(order.createdAt).getTime();
+            const orderAgeMs = nowMs - createdAtMs;
+            const retryWindowExpired = orderAgeMs > PAYMENT_RETRY_WINDOW_MS;
+            const isUnpaid = order.paymentStatus !== 'paid';
+
+            // Hide stale unpaid orders from profile after retry window.
+            if (isUnpaid && retryWindowExpired) {
+                continue;
+            }
+
+            await reconcilePendingBakongOrder(order, user);
+
+            const retryExpiresAt = new Date(createdAtMs + PAYMENT_RETRY_WINDOW_MS);
+            const canRetryPayment = (
+                order.paymentMethod === 'Bakong KHQR' &&
+                order.paymentStatus !== 'paid' &&
+                Date.now() <= retryExpiresAt.getTime()
+            );
+
+            visibleOrders.push({
                 id: order._id,
                 orderNumber: order.orderNumber,
                 items: order.items,
                 total: order.total,
+                paymentMethod: order.paymentMethod,
                 orderStatus: order.orderStatus,
                 paymentStatus: order.paymentStatus,
-                createdAt: order.createdAt
-            }))
+                createdAt: order.createdAt,
+                canRetryPayment,
+                retryPaymentExpiresAt: retryExpiresAt
+            });
+        }
+
+        res.json({
+            success: true,
+            orders: visibleOrders
         });
     } catch (error) {
         console.error('Orders error:', error);
