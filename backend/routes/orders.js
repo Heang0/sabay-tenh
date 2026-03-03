@@ -16,14 +16,40 @@ const PAYMENT_CHECK_TRANSIENT_MS = 30000;
 const QR_EXPIRED_RETRY_MS = 30000;
 const QR_CONFIRMATION_GRACE_MS = 10 * 60 * 1000;
 
+const normalizeSiteCode = (value) => {
+    const normalized = String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+    return normalized || 'A';
+};
+
 // Helper function to generate order number
 const generateOrderNumber = () => {
+    const siteCode = normalizeSiteCode(process.env.SITE_CODE || 'A');
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    return `ORD-${year}${month}${day}-${random}`;
+    return `${siteCode}-ORD-${year}${month}${day}-${random}`;
+};
+
+const sendPaidReceiptIfNeeded = async (order) => {
+    try {
+        if (!order) return;
+        if (order.paymentStatus !== 'paid') return;
+        if (order.receiptSentAt) return;
+        if (!order.customer?.email) return;
+
+        const result = await sendOrderReceipt(order);
+        if (result) {
+            order.receiptSentAt = new Date();
+            await order.save();
+        }
+    } catch (err) {
+        console.error('Paid receipt send error:', err.message);
+    }
 };
 
 // ========== PUBLIC ROUTES ==========
@@ -140,19 +166,6 @@ router.post('/', async (req, res) => {
 
         const savedOrder = await order.save();
 
-
-        // Fire and forget email with better error logging
-        if (savedOrder.customer.email) {
-            sendOrderReceipt(savedOrder)
-                .then(result => {
-                    if (result) { }
-                })
-                .catch(err => {
-                    console.error('❌ Email failed:', err.message);
-                    console.error('Email error details:', err);
-                });
-        }
-
         sendOrderNotification(savedOrder).catch(err =>
             console.error('Background telegram error:', err.message)
         );
@@ -241,6 +254,7 @@ router.get('/:id/check-payment', async (req, res) => {
         }
 
         if (order.paymentStatus === 'paid') {
+            sendPaidReceiptIfNeeded(order);
             return res.json({ status: 'paid' });
         }
 
@@ -269,6 +283,7 @@ router.get('/:id/check-payment', async (req, res) => {
                 order.orderStatus = 'processing';
             }
             await order.save();
+            sendPaidReceiptIfNeeded(order);
             return res.json({ status: 'paid' });
         }
 
@@ -288,6 +303,7 @@ router.get('/:id/check-payment', async (req, res) => {
                 order.orderStatus = 'processing';
             }
             await order.save();
+            sendPaidReceiptIfNeeded(order);
             statusResponse = { status: 'paid' };
             paymentCheckCache.delete(cacheKey);
             return res.json(statusResponse);
@@ -415,6 +431,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
             });
         }
 
+        const previousPaymentStatus = order.paymentStatus;
+
         // Update order status if provided
         if (req.body.orderStatus) {
             order.orderStatus = req.body.orderStatus;
@@ -426,6 +444,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
         }
 
         const updatedOrder = await order.save();
+        if (previousPaymentStatus !== 'paid' && updatedOrder.paymentStatus === 'paid') {
+            sendPaidReceiptIfNeeded(updatedOrder);
+        }
 
         res.json({
             success: true,
@@ -447,3 +468,4 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+

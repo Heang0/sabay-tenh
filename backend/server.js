@@ -9,6 +9,9 @@ require('dotenv').config();
 
 const app = express();
 
+// Render runs behind a reverse proxy; needed for correct client IP in rate limiting.
+app.set('trust proxy', 1);
+
 // 🛡️ 1. Security Headers (Hacks & XSS protection)
 app.use(helmet());
 
@@ -24,6 +27,7 @@ app.use((req, res, next) => {
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
+  skip: (req) => /^\/api\/orders\/[^/]+\/check-payment$/.test(req.originalUrl || ''),
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again after 15 minutes'

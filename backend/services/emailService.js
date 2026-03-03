@@ -4,6 +4,10 @@ const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false, // true for 465, false for other ports
+    family: 4, // Force IPv4 to avoid IPv6 ENETUNREACH on some hosts
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -38,7 +42,7 @@ const generateReceiptHTML = (order) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Order Confirmation</title>
+            <title>Payment Confirmation</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: 'Arial', sans-serif; background-color: #f4f4f4;">
             <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -47,7 +51,7 @@ const generateReceiptHTML = (order) => {
                 <tr>
                     <td style="background: linear-gradient(135deg, #005E7B 0%, #0078A0 100%); padding: 30px 20px; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">Sabay Tenh</h1>
-                        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Order Confirmation</p>
+                        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Payment Confirmation</p>
                     </td>
                 </tr>
                 
@@ -55,7 +59,7 @@ const generateReceiptHTML = (order) => {
                 <tr>
                     <td style="padding: 30px 30px 20px 30px;">
                         <div style="background-color: #e8f5e9; border-radius: 50px; padding: 12px 20px; text-align: center;">
-                            <span style="color: #2e7d32; font-weight: 600; font-size: 18px;">✓ Order Placed Successfully</span>
+                            <span style="color: #2e7d32; font-weight: 600; font-size: 18px;">Payment Confirmed</span>
                         </div>
                     </td>
                 </tr>
@@ -138,7 +142,8 @@ const generateReceiptHTML = (order) => {
                                 <tr>
                                     <td>
                                         <p style="margin: 0 0 8px 0; color: #005E7B; font-weight: 600; font-size: 15px;">Payment Method: Bakong KHQR</p>
-                                        <p style="margin: 0; color: #333; font-size: 14px;">Please complete payment by scanning the Bakong KHQR code on your payment page.</p>
+                                        <p style="margin: 0 0 6px 0; color: #333; font-size: 14px;">Payment Status: Paid</p>
+                                        <p style="margin: 0; color: #333; font-size: 14px;">Your payment was received successfully. We are now preparing your order.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -183,7 +188,7 @@ const sendOrderReceipt = async (order) => {
         const mailOptions = {
             from: `"Sabay Tenh" <${process.env.EMAIL_USER}>`,
             to: order.customer.email,
-            subject: `Order Confirmation #${order.orderNumber}`,
+            subject: `Payment Confirmed #${order.orderNumber}`,
             html: generateReceiptHTML(order)
         };
 
@@ -195,3 +200,4 @@ const sendOrderReceipt = async (order) => {
 };
 
 module.exports = { sendOrderReceipt };
+

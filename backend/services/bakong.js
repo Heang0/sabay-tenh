@@ -6,15 +6,26 @@ const cleanEnvValue = (value) => {
     return value.trim().replace(/^['"]|['"]$/g, '');
 };
 
+const normalizeSiteCode = (value) => {
+    const normalized = String(cleanEnvValue(value) || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+    return normalized || 'A';
+};
+
 class BakongService {
     constructor() {
         const env = cleanEnvValue(process.env.BAKONG_ENV || 'sandbox');
         const normalizedEnv = String(env).toLowerCase();
         const isProduction = ['production', 'prod', 'live'].includes(normalizedEnv);
+        const siteCode = normalizeSiteCode(process.env.SITE_CODE || 'A');
 
         this.accountId = cleanEnvValue(process.env.BAKONG_ACCOUNT_ID);
         this.merchantName = cleanEnvValue(process.env.BAKONG_MERCHANT_NAME);
         this.merchantCity = cleanEnvValue(process.env.BAKONG_MERCHANT_CITY || 'Phnom Penh');
+        this.storeLabel = cleanEnvValue(process.env.BAKONG_STORE_LABEL || `SITE-${siteCode}`);
+        this.terminalLabel = cleanEnvValue(process.env.BAKONG_TERMINAL_LABEL || `WEB-${siteCode}`);
         this.accessToken = cleanEnvValue(process.env.BAKONG_TOKEN);
         this.baseUrl = isProduction
             ? 'https://api-bakong.nbc.gov.kh/v1'
@@ -85,8 +96,8 @@ class BakongService {
                 amount: khqrAmount,
                 billNumber: order.orderNumber,
                 mobileNumber: String(order.customer?.phone || '').replace(/^0+/, '855'),
-                storeLabel: 'Online Store',
-                terminalLabel: 'Web',
+                storeLabel: this.storeLabel,
+                terminalLabel: this.terminalLabel,
                 expirationTimestamp: new Date(validUntil).getTime()
             };
 
