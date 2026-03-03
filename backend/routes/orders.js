@@ -6,7 +6,11 @@ const User = require('../models/User');
 const Coupon = require('../models/Coupon');
 const authMiddleware = require('../middleware/auth');
 const { sendOrderReceipt } = require('../services/emailService');
-const { sendOrderNotification } = require('../services/telegram');
+const {
+    sendOrderNotification,
+    sendCustomerOrderCreatedNotification,
+    sendCustomerPaymentConfirmedNotification
+} = require('../services/telegram');
 const bakongService = require('../services/bakong');
 
 // Reduce upstream pressure to Bakong API (helps avoid CloudFront/WAF rate blocks).
@@ -49,6 +53,37 @@ const sendPaidReceiptIfNeeded = async (order) => {
         }
     } catch (err) {
         console.error('Paid receipt send error:', err.message);
+    }
+};
+
+const sendCustomerOrderCreatedTelegramIfPossible = async (order) => {
+    try {
+        if (!order?.userId) return;
+        const user = await User.findById(order.userId).select('telegramId telegramUsername displayName');
+        if (!user?.telegramId) return;
+        await sendCustomerOrderCreatedNotification(order, user);
+    } catch (err) {
+        console.error('Customer Telegram create-notify error:', err.message);
+    }
+};
+
+const sendCustomerPaidTelegramIfNeeded = async (order) => {
+    try {
+        if (!order) return;
+        if (order.paymentStatus !== 'paid') return;
+        if (order.telegramPaidNotifiedAt) return;
+        if (!order.userId) return;
+
+        const user = await User.findById(order.userId).select('telegramId telegramUsername displayName');
+        if (!user?.telegramId) return;
+
+        const sent = await sendCustomerPaymentConfirmedNotification(order, user);
+        if (sent) {
+            order.telegramPaidNotifiedAt = new Date();
+            await order.save();
+        }
+    } catch (err) {
+        console.error('Customer Telegram paid-notify error:', err.message);
     }
 };
 
@@ -169,6 +204,9 @@ router.post('/', async (req, res) => {
         sendOrderNotification(savedOrder).catch(err =>
             console.error('Background telegram error:', err.message)
         );
+        sendCustomerOrderCreatedTelegramIfPossible(savedOrder).catch(err =>
+            console.error('Background customer telegram error:', err.message)
+        );
 
         res.status(201).json({
             success: true,
@@ -255,6 +293,7 @@ router.get('/:id/check-payment', async (req, res) => {
 
         if (order.paymentStatus === 'paid') {
             sendPaidReceiptIfNeeded(order);
+            sendCustomerPaidTelegramIfNeeded(order);
             return res.json({ status: 'paid' });
         }
 
@@ -284,6 +323,7 @@ router.get('/:id/check-payment', async (req, res) => {
             }
             await order.save();
             sendPaidReceiptIfNeeded(order);
+            sendCustomerPaidTelegramIfNeeded(order);
             return res.json({ status: 'paid' });
         }
 
@@ -304,6 +344,7 @@ router.get('/:id/check-payment', async (req, res) => {
             }
             await order.save();
             sendPaidReceiptIfNeeded(order);
+            sendCustomerPaidTelegramIfNeeded(order);
             statusResponse = { status: 'paid' };
             paymentCheckCache.delete(cacheKey);
             return res.json(statusResponse);
@@ -446,6 +487,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         const updatedOrder = await order.save();
         if (previousPaymentStatus !== 'paid' && updatedOrder.paymentStatus === 'paid') {
             sendPaidReceiptIfNeeded(updatedOrder);
+            sendCustomerPaidTelegramIfNeeded(updatedOrder);
         }
 
         res.json({

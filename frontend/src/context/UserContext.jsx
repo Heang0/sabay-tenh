@@ -5,6 +5,8 @@ import {
     signOut,
     onAuthStateChanged,
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithCustomToken,
     updateProfile,
     sendPasswordResetEmail,
     verifyPasswordResetCode,
@@ -102,6 +104,36 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    const signInWithTelegram = async (telegramUser) => {
+        try {
+            setLoading(true);
+
+            const response = await fetch(`${API_URL}/users/telegram-auth`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(telegramUser)
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.customToken) {
+                return {
+                    success: false,
+                    message: data.message || 'Telegram sign-in failed'
+                };
+            }
+
+            await signInWithCustomToken(auth, data.customToken);
+            return { success: true };
+        } catch (error) {
+            console.error('Telegram sign-in error:', error);
+            return { success: false, message: error.message };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const registerWithEmail = async (email, password, displayName) => {
         try {
             setLoading(true);
@@ -173,6 +205,7 @@ export const UserProvider = ({ children }) => {
         firebaseUser,
         loading,
         signInWithGoogle,
+        signInWithTelegram,
         signInWithEmail,
         registerWithEmail,
         resetPassword,

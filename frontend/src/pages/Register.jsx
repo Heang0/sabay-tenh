@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
+import TelegramLoginButton from '../components/TelegramLoginButton';
 
 const EyeIcon = ({ open }) => (
     open ? (
@@ -58,7 +59,7 @@ const getFirebaseError = (code) => {
 
 const Register = () => {
     const navigate = useNavigate();
-    const { signInWithGoogle, registerWithEmail, loading, isLoggedIn } = useUser();
+    const { signInWithGoogle, signInWithTelegram, registerWithEmail, loading, isLoggedIn } = useUser();
     const { language } = useLanguage();
 
     const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
@@ -111,6 +112,16 @@ const Register = () => {
             navigate('/profile');
         } else {
             setError(km ? 'មានបញ្ហាជាមួយ Google' : 'Google sign-up failed. Please try again.');
+        }
+    };
+
+    const handleTelegramSignIn = async (telegramUser) => {
+        setError('');
+        const result = await signInWithTelegram(telegramUser);
+        if (result.success) {
+            navigate('/profile');
+        } else {
+            setError(km ? 'មានបញ្ហាជាមួយ Telegram' : (result.message || 'Telegram sign-up failed. Please try again.'));
         }
     };
 
@@ -296,6 +307,9 @@ const Register = () => {
                                     : (km ? 'ចុះឈ្មោះដោយប្រើ Google' : 'Sign up with Google')}
                             </span>
                         </button>
+                        <div className="mt-3">
+                            <TelegramLoginButton onAuth={handleTelegramSignIn} disabled={loading || submitting} />
+                        </div>
 
                         {/* Login link */}
                         <p className={`text-center text-sm text-gray-500 mt-6 ${km ? 'font-khmer' : ''}`}>

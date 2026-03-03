@@ -23,6 +23,7 @@ const orderSchema = new mongoose.Schema({
     paymentMethod: { type: String, default: 'Bakong KHQR' },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
     receiptSentAt: { type: Date, default: null },
+    telegramPaidNotifiedAt: { type: Date, default: null },
     paymentMd5: String,
     paymentData: {
         currency: String,

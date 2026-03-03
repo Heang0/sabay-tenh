@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
+import TelegramLoginButton from '../components/TelegramLoginButton';
 
 const EyeIcon = ({ open }) => (
     open ? (
@@ -47,7 +48,7 @@ const UserLogin = () => {
     const [isResetMode, setIsResetMode] = useState(false);
     const [resetEmail, setResetEmail] = useState('');
     const [resetSent, setResetSent] = useState(false);
-    const { signInWithGoogle, signInWithEmail, resetPassword, loading, isLoggedIn } = useUser();
+    const { signInWithGoogle, signInWithTelegram, signInWithEmail, resetPassword, loading, isLoggedIn } = useUser();
 
     const { language } = useLanguage();
     const km = language === 'km';
@@ -195,6 +196,16 @@ const UserLogin = () => {
         }
     };
 
+    const handleTelegramSignIn = async (telegramUser) => {
+        setError('');
+        const result = await signInWithTelegram(telegramUser);
+        if (result.success) {
+            navigate('/profile');
+        } else {
+            setError(km ? 'មានបញ្ហាជាមួយ Telegram' : (result.message || 'Telegram sign-in failed. Please try again.'));
+        }
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 px-4 py-12">
             <div className="w-full max-w-md">
@@ -299,6 +310,9 @@ const UserLogin = () => {
                                     : (km ? 'ចូលដោយប្រើ Google' : 'Continue with Google')}
                             </span>
                         </button>
+                        <div className="mt-3">
+                            <TelegramLoginButton onAuth={handleTelegramSignIn} disabled={loading || submitting} />
+                        </div>
                         <p className={`text-center text-sm text-gray-500 mt-6 ${km ? 'font-khmer' : ''}`}>
                             {km ? 'មិនទាន់មានគណនី?' : "Don't have an account?"}{' '}
                             <Link to="/register" className={`font-semibold text-[#005E7B] hover:text-teal-600 transition-colors ${km ? 'font-khmer' : ''}`}>

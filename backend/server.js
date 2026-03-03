@@ -48,6 +48,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/', authLimiter);
 app.use('/api/users/google-auth', authLimiter);
+app.use('/api/users/telegram-auth', authLimiter);
 
 // 🛡️ 5. HTTP Parameter Pollution protection
 app.use(hpp());
